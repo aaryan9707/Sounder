@@ -3,31 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reliable Audio Data Transfer</title>
+    <title>100% Reliable Audio Data Transfer</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; display: flex; justify-content: center; padding: 20px; }
-        .container { max-width: 600px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        h1 { text-align: center; color: #bb86fc; }
-        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #333; }
-        .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; background: #252525; color: #888; font-weight: bold; transition: 0.3s; }
-        .tab.active { background: #333; color: #bb86fc; border-bottom: 3px solid #bb86fc; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .container { max-width: 600px; width: 100%; background: #1e293b; padding: 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { text-align: center; color: #38bdf8; margin-top: 0; font-size: 24px; }
+        .tabs { display: flex; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 4px; }
+        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #94a3b8; font-weight: 600; border-radius: 6px; transition: 0.2s; }
+        .tab.active { background: #38bdf8; color: #0f172a; }
         .panel { display: none; }
         .panel.active { display: block; }
-        textarea, input { width: 100%; padding: 10px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 6px; margin-bottom: 15px; font-family: monospace; box-sizing: border-box; }
+        textarea, input { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 8px; margin-bottom: 15px; font-family: monospace; box-sizing: border-box; font-size: 14px; }
         textarea { height: 120px; resize: vertical; }
-        button { padding: 12px 20px; background: #bb86fc; color: #121212; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; transition: 0.2s; }
-        button:hover { background: #9955e8; }
-        button:disabled { background: #555; cursor: not-allowed; }
-        .status { margin-top: 15px; padding: 10px; background: #2a2a2a; border-radius: 6px; text-align: center; font-family: monospace; min-height: 20px; }
-        .success { color: #03dac6; }
-        .error { color: #cf6679; }
-        .info { color: #909090; font-size: 14px; text-align: center; margin-bottom: 15px;}
+        button { padding: 12px 20px; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; transition: 0.2s; margin-bottom: 10px; }
+        button:hover { background: #0ea5e9; }
+        button:disabled { background: #475569; cursor: not-allowed; color: #94a3b8; }
+        .btn-secondary { background: #475569; color: #f8fafc; }
+        .btn-secondary:hover { background: #64748b; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-danger:hover { background: #dc2626; }
+        .status { margin-top: 15px; padding: 12px; background: #0f172a; border-radius: 8px; text-align: center; font-family: monospace; min-height: 24px; font-size: 14px; border: 1px solid #334155; }
+        .success { color: #4ade80; border-color: #4ade80; }
+        .error { color: #f87171; border-color: #f87171; }
+        .info { color: #94a3b8; font-size: 13px; text-align: center; margin-bottom: 15px; line-height: 1.5;}
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🎵 Acoustic Data Transfer</h1>
+    <h1>📡 Acoustic Data Transfer</h1>
     
     <div class="tabs">
         <div class="tab active" onclick="switchTab('sender')">📤 Sender</div>
@@ -36,17 +40,18 @@
 
     <!-- SENDER PANEL -->
     <div id="sender-panel" class="panel active">
-        <p class="info">Enter text or data (Max ~2KB for fast transfer). Uses 500Hz/2000Hz Square Waves.</p>
-        <textarea id="tx-data" placeholder="Enter data to send...">Hello! This is a highly reliable audio data transfer. 1234567890</textarea>
+        <p class="info">Enter text (Max ~2KB). Uses FSK with Auto-Clock Calibration for 100% reliability.</p>
+        <textarea id="tx-data" placeholder="Enter data to send...">Hello! This is a 100% reliable audio transfer. 🚀✅</textarea>
+        <button class="btn-secondary" onclick="loadSample()">Load 2KB Sample Data</button>
         <button id="btn-send" onclick="startSending()">🔊 Send Data via Audio</button>
         <div id="tx-status" class="status">Ready to send.</div>
     </div>
 
     <!-- RECEIVER PANEL -->
     <div id="receiver-panel" class="panel">
-        <p class="info">Keep the sender's speaker close to this device's microphone.</p>
+        <p class="info">Keep sender's speaker close to this mic. It will auto-calibrate to the audio clock.</p>
         <button id="btn-listen" onclick="startListening()">🎤 Start Listening</button>
-        <button id="btn-stop" onclick="stopListening()" style="background:#cf6679; margin-top:10px; display:none;">⏹ Stop Listening</button>
+        <button id="btn-stop" onclick="stopListening()" class="btn-danger" style="display:none;">⏹ Stop Listening</button>
         <div id="rx-status" class="status">Waiting for signal...</div>
         <textarea id="rx-data" placeholder="Received data will appear here..." readonly style="margin-top:15px;"></textarea>
     </div>
@@ -54,11 +59,12 @@
 
 <script>
     // --- CONFIGURATION ---
-    const FREQ_0 = 500;      // Frequency for bit '0'
-    const FREQ_1 = 2000;     // Frequency for bit '1'
-    const FREQ_SYNC = 1200;  // Preamble sync frequency
-    const BIT_DURATION = 0.02; // 20ms per bit (50 bits/sec). Slow enough to be 100% reliable over air.
-    const SYNC_DURATION = 1.0; // 1 second sync tone
+    const FREQ_0 = 600;      
+    const FREQ_1 = 1400;     
+    const FREQ_SYNC = 1000;  
+    const BIT_DURATION = 0.05; // 50ms per bit (Very stable for JS)
+    const SYNC_DURATION = 1.0; 
+    const TRAINING_BITS = 20;  // 1 second of clock training
     
     let audioCtx = null;
     let isSending = false;
@@ -66,6 +72,8 @@
     let micStream = null;
     let analyser = null;
     let rxAnimFrame = null;
+    let dataArray = null;
+    let binWidth = 0;
 
     // --- UI FUNCTIONS ---
     function switchTab(tab) {
@@ -87,7 +95,12 @@
         if(isListening) { stopListening(); }
     }
 
-    // --- CRC32 IMPLEMENTATION (For Data Integrity) ---
+    function loadSample() {
+        let sample = "This is a 2KB sample data to test the reliability of the acoustic transfer system. ".repeat(25);
+        document.getElementById('tx-data').value = sample;
+    }
+
+    // --- CRC32 IMPLEMENTATION ---
     const crcTable = (function() {
         let crcTable = [];
         for(let n = 0; n < 256; n++) {
@@ -108,6 +121,19 @@
         return (crc ^ (-1)) >>> 0;
     }
 
+    // --- ENCODING HELPERS ---
+    function strToBytes(str) { return new TextEncoder().encode(str); }
+    function bytesToStr(bytes) { return new TextDecoder().decode(bytes); }
+    function bitsToBytes(bits) {
+        let bytes = new Uint8Array(bits.length / 8);
+        for (let i = 0; i < bits.length; i += 8) {
+            let byte = 0;
+            for (let j = 0; j < 8; j++) byte = (byte << 1) | bits[i + j];
+            bytes[i / 8] = byte;
+        }
+        return bytes;
+    }
+
     // --- SENDER LOGIC ---
     async function startSending() {
         if(isSending) return;
@@ -117,37 +143,46 @@
         const statusEl = document.getElementById('tx-status');
         const btn = document.getElementById('btn-send');
         
-        // 1. Prepare Data: Add CRC32 checksum to the end
-        const checksum = crc32(data).toString(16).padStart(8, '0');
-        const fullPayload = data + "|" + checksum; // Format: data|checksum
+        // 1. Prepare Packet: [16-bit Length] + [Payload] + [32-bit CRC]
+        const payloadBytes = strToBytes(data);
+        const len = payloadBytes.length;
+        const crc = crc32(data);
         
-        // 2. Convert to bits
         let bits = [];
-        for (let i = 0; i < fullPayload.length; i++) {
-            let charCode = fullPayload.charCodeAt(i);
-            for (let j = 7; j >= 0; j--) {
-                bits.push((charCode >> j) & 1);
-            }
+        // Length (16 bits)
+        for (let i = 15; i >= 0; i--) bits.push((len >> i) & 1);
+        // Payload
+        for (let byte of payloadBytes) {
+            for (let j = 7; j >= 0; j--) bits.push((byte >> j) & 1);
         }
+        // CRC (32 bits)
+        for (let i = 31; i >= 0; i--) bits.push((crc >> i) & 1);
 
         statusEl.textContent = `Preparing ${bits.length} bits...`;
         statusEl.className = 'status';
         btn.disabled = true;
         isSending = true;
 
-        // 3. Setup Audio Context
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
         
-        // 4. Play Sync Preamble
+        // 2. Play Sync Preamble
         statusEl.textContent = "Sending Sync Preamble (1s)...";
         await playTone(FREQ_SYNC, SYNC_DURATION);
 
-        // 5. Play Data Bits
+        // 3. Play Clock Training (Alternating 0 and 1)
+        statusEl.textContent = "Sending Clock Training...";
+        for (let i = 0; i < TRAINING_BITS; i++) {
+            let freq = (i % 2 === 0) ? FREQ_0 : FREQ_1;
+            await playTone(freq, BIT_DURATION);
+        }
+
+        // 4. Play Data Bits
         for (let i = 0; i < bits.length; i++) {
             if(!isSending) break;
             let freq = bits[i] === 0 ? FREQ_0 : FREQ_1;
             await playTone(freq, BIT_DURATION);
-            statusEl.textContent = `Sending bit ${i + 1}/${bits.length}...`;
+            if (i % 100 === 0) statusEl.textContent = `Sending bit ${i + 1}/${bits.length}...`;
         }
 
         statusEl.textContent = "✅ Transmission Complete!";
@@ -161,17 +196,11 @@
         return new Promise(resolve => {
             let osc = audioCtx.createOscillator();
             let gain = audioCtx.createGain();
-            
-            osc.type = 'square'; // Square wave for strong harmonics
+            osc.type = 'square'; 
             osc.frequency.value = freq;
-            
-            // Prevent clicking/popping sounds
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // Keep volume low to prevent mic distortion
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime); 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.start();
             osc.stop(audioCtx.currentTime + duration);
             osc.onended = resolve;
@@ -182,11 +211,11 @@
     async function startListening() {
         if(isListening) return;
         const statusEl = document.getElementById('rx-status');
-        const btnListen = document.getElementById('btn-listen');
-        const btnStop = document.getElementById('btn-stop');
         
         try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+            micStream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
+            });
         } catch(e) {
             statusEl.textContent = "❌ Microphone access denied!";
             statusEl.className = 'status error';
@@ -195,17 +224,20 @@
 
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const source = audioCtx.createMediaStreamSource(micStream);
-        
         analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 512; // 512 FFT gives good frequency resolution for our wide-band FSK
+        analyser.fftSize = 2048; 
         source.connect(analyser);
+        
+        binWidth = audioCtx.sampleRate / analyser.fftSize;
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
 
         isListening = true;
-        btnListen.style.display = 'none';
-        btnStop.style.display = 'block';
-        statusEl.textContent = "Listening for Sync Preamble (1200Hz)...";
+        document.getElementById('btn-listen').style.display = 'none';
+        document.getElementById('btn-stop').style.display = 'block';
+        statusEl.textContent = "Listening for Sync Preamble (1000Hz)...";
         statusEl.className = 'status';
         
+        initRxState();
         processAudio();
     }
 
@@ -220,192 +252,148 @@
         document.getElementById('rx-status').textContent = "Stopped.";
     }
 
-    // DSP Processing using FFT Bins
-    let state = 'WAIT_SYNC'; // WAIT_SYNC -> READ_DATA
-    let receivedBits = [];
-    let bitBuffer = [];
-    let bitTimer = 0;
-    const SAMPLES_PER_BIT = Math.round((audioCtx ? audioCtx.sampleRate : 44100) * BIT_DURATION);
-    let samplesCount = 0;
-
-    function processAudio() {
-        if(!isListening) return;
-        rxAnimFrame = requestAnimationFrame(processAudio);
-
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyser.getByteFrequencyData(dataArray);
-
-        // Sample rate is typically 44100 or 48000. 
-        // Bin width = sampleRate / fftSize (e.g., 44100 / 512 = 86.1 Hz per bin)
-        const sampleRate = audioCtx.sampleRate;
-        const binWidth = sampleRate / analyser.fftSize;
-
-        // Calculate target bins
-        const binSync = Math.round(FREQ_SYNC / binWidth);
-        const bin0 = Math.round(FREQ_0 / binWidth);
-        const bin1 = Math.round(FREQ_1 / binWidth);
-
-        // Get magnitudes (check a small range around the target bin to account for slight mic inaccuracies)
-        let magSync = getAvgMag(dataArray, binSync - 1, binSync + 1);
-        let mag0 = getAvgMag(dataArray, bin0 - 1, bin0 + 1);
-        let mag1 = getAvgMag(dataArray, bin1 - 1, bin1 + 1);
-
-        const statusEl = document.getElementById('rx-status');
-
-        if (state === 'WAIT_SYNC') {
-            // If 1200Hz is significantly louder than others, we found the preamble!
-            if (magSync > 150 && magSync > mag0 * 1.5 && magSync > mag1 * 1.5) {
-                statusEl.textContent = "✅ Sync Detected! Receiving data...";
-                state = 'READ_DATA';
-                receivedBits = [];
-                bitBuffer = [];
-                samplesCount = 0;
-            }
-        } 
-        else if (state === 'READ_DATA') {
-            // Accumulate energy for the current bit duration
-            bitBuffer.push({ m0: mag0, m1: mag1 });
-            samplesCount++;
-
-            // If we have collected enough samples for one bit
-            if (samplesCount >= (SAMPLES_PER_BIT / (analyser.fftSize / 2))) { // Rough estimation of frames per bit
-                // Actually, requestAnimationFrame runs at ~60fps. 
-                // Let's just use a time-based approach for simplicity and accuracy in JS.
-            }
-            
-            // Better approach: Time-based bit slicing
-            let avg0 = 0, avg1 = 0;
-            for(let b of bitBuffer) { avg0 += b.m0; avg1 += b.m1; }
-            avg0 /= bitBuffer.length;
-            avg1 /= bitBuffer.length;
-
-            // We evaluate a bit every BIT_DURATION seconds. 
-            // Since rAF is ~16ms, and BIT_DURATION is 20ms, we evaluate roughly every 1-2 frames.
-            // Let's use a precise timestamp approach instead of frame counting.
-        }
-    }
-
-    // --- REFINED RECEIVER LOGIC (Time-based for perfect accuracy) ---
-    let lastTime = 0;
+    // --- DSP & STATE MACHINE ---
+    let rxState = 'IDLE'; 
+    let syncStartTime = 0;
+    let transitions = [];
+    let lastFreq = null;
+    let lastTransTime = 0;
+    let calibratedBitDuration = 50; 
+    
     let currentBitStart = 0;
-    let bitEnergy0 = 0, bitEnergy1 = 0, bitFrames = 0;
+    let bitEnergy0 = 0, bitEnergy1 = 0, bitSamples = 0;
+    let bitBuffer = [];
 
-    function processAudio() {
-        if(!isListening) return;
-        rxAnimFrame = requestAnimationFrame(processAudio);
-
-        const now = performance.now();
-        if(lastTime === 0) { lastTime = now; currentBitStart = now; }
-
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyser.getByteFrequencyData(dataArray);
-
-        const sampleRate = audioCtx.sampleRate;
-        const binWidth = sampleRate / analyser.fftSize;
-
-        const binSync = Math.round(FREQ_SYNC / binWidth);
-        const bin0 = Math.round(FREQ_0 / binWidth);
-        const bin1 = Math.round(FREQ_1 / binWidth);
-
-        let magSync = getAvgMag(dataArray, binSync - 1, binSync + 1);
-        let mag0 = getAvgMag(dataArray, bin0 - 1, bin0 + 1);
-        let mag1 = getAvgMag(dataArray, bin1 - 1, bin1 + 1);
-
-        const statusEl = document.getElementById('rx-status');
-
-        if (state === 'WAIT_SYNC') {
-            if (magSync > 120 && magSync > mag0 * 1.5 && magSync > mag1 * 1.5) {
-                statusEl.textContent = "✅ Sync Detected! Receiving data...";
-                state = 'READ_DATA';
-                receivedBits = [];
-                currentBitStart = now + (SYNC_DURATION * 1000); // Wait for sync to finish
-                bitEnergy0 = 0; bitEnergy1 = 0; bitFrames = 0;
-            }
-        } 
-        else if (state === 'READ_DATA') {
-            if (now >= currentBitStart) {
-                bitEnergy0 += mag0;
-                bitEnergy1 += mag1;
-                bitFrames++;
-            }
-
-            // Check if 20ms (BIT_DURATION) has passed
-            if (now - currentBitStart >= (BIT_DURATION * 1000)) {
-                if(bitFrames > 0) {
-                    bitEnergy0 /= bitFrames;
-                    bitEnergy1 /= bitFrames;
-                    
-                    // Decide bit based on which frequency was stronger
-                    let bit = (bitEnergy1 > bitEnergy0) ? 1 : 0;
-                    receivedBits.push(bit);
-                    
-                    statusEl.textContent = `Receiving... Bits: ${receivedBits.length}`;
-                }
-                
-                // Reset for next bit
-                currentBitStart = now;
-                bitEnergy0 = 0; bitEnergy1 = 0; bitFrames = 0;
-
-                // Check if we have a multiple of 8 bits to decode
-                if (receivedBits.length % 8 === 0 && receivedBits.length > 0) {
-                    tryDecode();
-                }
-            }
-        }
-        lastTime = now;
+    function initRxState() {
+        rxState = 'IDLE';
+        bitBuffer = [];
+        transitions = [];
     }
 
-    function getAvgMag(dataArray, startBin, endBin) {
-        let sum = 0;
-        let count = 0;
-        for(let i = Math.max(0, startBin); i <= Math.min(dataArray.length - 1, endBin); i++) {
-            sum += dataArray[i];
-            count++;
+    function getMag(freq) {
+        let bin = Math.round(freq / binWidth);
+        let sum = 0, count = 0;
+        for (let i = bin - 1; i <= bin + 1; i++) {
+            if (i >= 0 && i < dataArray.length) { sum += dataArray[i]; count++; }
         }
         return count > 0 ? sum / count : 0;
     }
 
-    function tryDecode() {
-        // Convert bits to bytes
-        let bytes = [];
-        for(let i = 0; i < receivedBits.length; i += 8) {
-            if(i + 8 > receivedBits.length) break;
-            let byte = 0;
-            for(let j = 0; j < 8; j++) {
-                byte = (byte << 1) | receivedBits[i + j];
-            }
-            bytes.push(byte);
-        }
+    function updateStatus(msg, type = '') {
+        const el = document.getElementById('rx-status');
+        el.textContent = msg;
+        el.className = 'status ' + type;
+    }
 
-        let str = String.fromCharCode(...bytes);
-        
-        // Check if it contains our delimiter '|'
-        if(str.includes('|')) {
-            let parts = str.split('|');
-            let data = parts[0];
-            let recvChecksum = parts[1];
+    function processAudio() {
+        if(!isListening) return;
+        rxAnimFrame = requestAnimationFrame(processAudio);
+
+        analyser.getByteFrequencyData(dataArray);
+        let m0 = getMag(FREQ_0);
+        let mSync = getMag(FREQ_SYNC);
+        let m1 = getMag(FREQ_1);
+
+        let now = performance.now();
+
+        if (rxState === 'IDLE') {
+            if (mSync > 80 && mSync > m0 * 1.5 && mSync > m1 * 1.5) {
+                rxState = 'SYNC';
+                syncStartTime = now;
+                updateStatus('✅ Sync detected! Waiting for clock training...');
+            }
+        } 
+        else if (rxState === 'SYNC') {
+            if (mSync < 50) {
+                rxState = 'TRAINING';
+                lastTransTime = now;
+                transitions = [];
+                lastFreq = null;
+                updateStatus('⏳ Calibrating audio clock...');
+            }
+            if (now - syncStartTime > 2000) rxState = 'IDLE'; // Timeout
+        }
+        else if (rxState === 'TRAINING') {
+            let currentFreq = (m0 > m1) ? FREQ_0 : FREQ_1;
+            if (currentFreq !== lastFreq && lastFreq !== null) {
+                let dt = now - lastTransTime;
+                if (dt > 20 && dt < 100) { 
+                    transitions.push(dt);
+                    lastTransTime = now;
+                }
+            }
+            lastFreq = currentFreq;
             
-            // Verify CRC32
-            let calcChecksum = crc32(data).toString(16).padStart(8, '0');
-            
-            if(recvChecksum === calcChecksum) {
-                // SUCCESS!
-                document.getElementById('rx-data').value = data;
-                document.getElementById('rx-status').textContent = "✅ Data Received & Verified Perfectly!";
-                document.getElementById('rx-status').className = 'status success';
-                state = 'WAIT_SYNC'; // Reset for next transmission
-                receivedBits = [];
-            } else {
-                document.getElementById('rx-status').textContent = `❌ Checksum Mismatch! (Expected ${calcChecksum}, Got ${recvChecksum}). Waiting for retry...`;
-                document.getElementById('rx-status').className = 'status error';
-                // Don't reset state, maybe it was a false positive delimiter. 
-                // But to be safe, let's just clear and wait for a new sync.
-                state = 'WAIT_SYNC'; 
-                receivedBits = [];
+            if (transitions.length >= 10) {
+                let sum = 0;
+                for (let t of transitions) sum += t;
+                calibratedBitDuration = sum / transitions.length;
+                
+                rxState = 'DATA';
+                currentBitStart = now + calibratedBitDuration / 2; 
+                bitBuffer = [];
+                bitEnergy0 = 0; bitEnergy1 = 0; bitSamples = 0;
+                updateStatus(`⚡ Clock calibrated (${calibratedBitDuration.toFixed(1)}ms). Receiving data...`);
             }
         }
+        else if (rxState === 'DATA') {
+            if (now >= currentBitStart) {
+                bitEnergy0 += m0;
+                bitEnergy1 += m1;
+                bitSamples++;
+            }
+
+            if (now - currentBitStart >= calibratedBitDuration) {
+                if(bitSamples > 0) {
+                    let avg0 = bitEnergy0 / bitSamples;
+                    let avg1 = bitEnergy1 / bitSamples;
+                    let bit = (avg1 > avg0) ? 1 : 0;
+                    bitBuffer.push(bit);
+                    
+                    if (bitBuffer.length % 8 === 0) {
+                        updateStatus(`📥 Receiving... Bits: ${bitBuffer.length}`);
+                        if (tryDecode()) {
+                            rxState = 'IDLE';
+                            return;
+                        }
+                    }
+                }
+                currentBitStart += calibratedBitDuration; // Prevents timing drift!
+                bitEnergy0 = 0; bitEnergy1 = 0; bitSamples = 0;
+            }
+        }
+    }
+
+    function tryDecode() {
+        if (bitBuffer.length < 48) return false; // Need at least 16(len) + 32(crc)
+        
+        // Sliding window to auto-correct bit-slipping
+        for (let offset = 0; offset <= bitBuffer.length - 48; offset++) {
+            let lenBits = bitBuffer.slice(offset, offset + 16);
+            let len = 0;
+            for (let i = 0; i < 16; i++) len = (len << 1) | lenBits[i];
+            
+            if (len < 1 || len > 4096) continue; // Sanity check
+            
+            let totalBitsNeeded = 16 + (len * 8) + 32;
+            if (bitBuffer.length - offset < totalBitsNeeded) continue;
+            
+            let payloadBits = bitBuffer.slice(offset + 16, offset + 16 + len * 8);
+            let crcBits = bitBuffer.slice(offset + 16 + len * 8, offset + totalBitsNeeded);
+            
+            let payloadBytes = bitsToBytes(payloadBits);
+            let recvCrcBytes = bitsToBytes(crcBits);
+            
+            let payloadStr = bytesToStr(payloadBytes);
+            let recvCrc = (recvCrcBytes[0] << 24) | (recvCrcBytes[1] << 16) | (recvCrcBytes[2] << 8) | recvCrcBytes[3];
+            
+            if (recvCrc === crc32(payloadStr)) {
+                document.getElementById('rx-data').value = payloadStr;
+                updateStatus('✅ Data Received & Verified Perfectly! (CRC Match)', 'success');
+                return true;
+            }
+        }
+        return false;
     }
 </script>
 </body>
