@@ -321,7 +321,7 @@ const C = {
     GAP: 0.3,        // gap after sync
     INT: 6,          // analysis interval in ms (faster sampling)
     THRESH: 40,      // amplitude threshold (lowered for sensitivity)
-    TOL: 800,        // frequency band tolerance in Hz
+    TOL: 400,        // frequency band tolerance in Hz
     SMIN: 20,        // min sync frames needed (~120ms)
     GMIN: 6,         // min silence frames for gap (~36ms)
     MAX: 2048,       // max file size bytes
@@ -517,7 +517,7 @@ async function startSend() {
     const gn = sCtx.createGain();
     const an = sCtx.createAnalyser();
     an.fftSize = 256;
-    sOsc.type = 'sine';
+    sOsc.type = 'square';
     sOsc.connect(gn);
     gn.connect(an);
     gn.connect(sCtx.destination);
@@ -852,22 +852,25 @@ function startListen() {
                 break;
 
             case 'RECEIVING':
-                // Check end sync
-                if (sig === 'SYNC') {
-                    votes.sync++;
-                } else if (sig === 'ZERO') {
-                    votes.zero++;
-                } else if (sig === 'ONE') {
-                    votes.one++;
-                } else {
-                    votes.silence++;
-                }
-
                 sampleCounter += 512;
+                
+                // Aperture sampling: Only accumulate votes in the middle 60% of the bit window
+                var bitProgress = sampleCounter / samplesPerBit;
+                if (bitProgress > 0.20 && bitProgress < 0.80) {
+                    if (sig === 'SYNC') {
+                        votes.sync++;
+                    } else if (sig === 'ZERO') {
+                        votes.zero++;
+                    } else if (sig === 'ONE') {
+                        votes.one++;
+                    } else {
+                        votes.silence++;
+                    }
+                }
 
                 if (sampleCounter >= samplesPerBit) {
                     // Check if sync dominated during this bit duration (End Sync signal)
-                    if (votes.sync > votes.zero && votes.sync > votes.one && votes.sync > 5) {
+                    if (votes.sync > votes.zero && votes.sync > votes.one && votes.sync >= 2) {
                         dbg('>> END SYNC detected. Total bits: ' + allBits.length + ' (' + Math.floor(allBits.length / 8) + ' bytes)');
                         finishReceive();
                         return;
