@@ -609,22 +609,34 @@
                 });
 
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const mic = audioCtx.createMediaStreamSource(stream);
-                const analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 2048;
-                mic.connect(analyser);
+                // Chrome suspends AudioContext by default — must resume
+                if (audioCtx.state === 'suspended') {
+                    await audioCtx.resume();
+                }
 
+                const mic = audioCtx.createMediaStreamSource(stream);
                 const sampleRate = audioCtx.sampleRate;
-                const windowSize = Math.round(sampleRate * (SYMBOL_MS / 1000));
-                const buffer = new Float32Array(windowSize);
+                const symbolSamples = Math.round(sampleRate * (SYMBOL_MS / 1000));
+
+                // Use ScriptProcessorNode — it processes EVERY audio sample
+                // unlike AnalyserNode+rAF which skips/duplicates data.
+                const bufSize = 4096;
+                const processor = audioCtx.createScriptProcessor(bufSize, 1, 1);
+
+                // Accumulator for building symbol-width analysis windows
+                let sampleBuf = [];
 
                 recvState = {
                     phase: 'idle',        // idle -> calibrated -> synced -> reading
                     bits: '',
-                    lastSymbolTime: 0,
                     stream: stream,
+                    processor: processor,
                     expectedTotalBits: null,
-                    headerShown: false
+                    headerShown: false,
+                    // Counters for requiring consecutive tone detections
+                    calHits: 0,
+                    syncHits: 0,
+                    silentWindows: 0
                 };
 
                 packetLogReset('Listening for calibration tone...');
@@ -632,20 +644,104 @@
                 setStatus('Listening. Play the file from the sender device now.', '');
                 setRecvProgress(0);
 
-                function pollLoop() {
-                    if (!recvState) return; // stopped
+                let lastBarUpdate = 0;
 
-                    analyser.getFloatTimeDomainData(buffer);
-                    const result = classifyWindow(buffer, sampleRate);
-                    const energy = result.mag / windowSize;
+                processor.onaudioprocess = (e) => {
+                    if (!recvState) return;
+                    const st = recvState;
 
-                    updateSignalBars(result.all, windowSize, result.freq, energy);
-                    handleDetection(result.freq, energy);
+                    const input = e.inputBuffer.getChannelData(0);
+                    // Silence the output to prevent feedback
+                    const output = e.outputBuffer.getChannelData(0);
+                    for (let j = 0; j < output.length; j++) output[j] = 0;
 
-                    requestAnimationFrame(pollLoop);
-                }
+                    // Accumulate samples
+                    for (let j = 0; j < input.length; j++) {
+                        sampleBuf.push(input[j]);
+                    }
 
-                pollLoop();
+                    // Process each complete symbol-width window
+                    while (sampleBuf.length >= symbolSamples) {
+                        const win = new Float32Array(sampleBuf.splice(0, symbolSamples));
+
+                        // Goertzel on all target frequencies
+                        const mags = {};
+                        for (const f of GOERTZEL_TARGETS) {
+                            mags[f] = goertzelMagnitude(win, sampleRate, f);
+                        }
+                        let bestFreq = null, bestMag = -1;
+                        for (const f of GOERTZEL_TARGETS) {
+                            if (mags[f] > bestMag) {
+                                bestMag = mags[f];
+                                bestFreq = f;
+                            }
+                        }
+                        const energy = bestMag / symbolSamples;
+
+                        // Update signal bars (throttled to ~15fps for UI)
+                        const now = performance.now();
+                        if (now - lastBarUpdate > 65) {
+                            lastBarUpdate = now;
+                            updateSignalBars(mags, symbolSamples, bestFreq, energy);
+                        }
+
+                        // --- State machine ---
+                        const isSilent = energy < MIN_ENERGY;
+
+                        if (st.phase === 'idle') {
+                            if (!isSilent && bestFreq === CALIBRATE_FREQ) {
+                                st.calHits++;
+                                if (st.calHits >= 2) {
+                                    st.phase = 'calibrated';
+                                    st.syncHits = 0;
+                                    setPhase('waiting', 'Calibration detected');
+                                    packetLogReset('<span class="info">[CAL]</span> Calibration tone detected. Waiting for sync...');
+                                }
+                            } else {
+                                st.calHits = 0;
+                            }
+                        }
+                        else if (st.phase === 'calibrated') {
+                            if (!isSilent && bestFreq === SYNC_FREQ) {
+                                st.syncHits++;
+                                if (st.syncHits >= 3) {
+                                    st.phase = 'reading';
+                                    st.bits = '';
+                                    st.expectedTotalBits = null;
+                                    st.headerShown = false;
+                                    st.silentWindows = 0;
+                                    liveByteBuffer = [];
+                                    setPhase('active', 'Sync detected, receiving');
+                                    packetLog('<span class="info">[SYNC]</span> Frame start. Receiving data...');
+                                }
+                            } else if (!isSilent && bestFreq === CALIBRATE_FREQ) {
+                                // still calibrating, fine
+                            } else {
+                                st.syncHits = 0;
+                            }
+                        }
+                        else if (st.phase === 'reading') {
+                            if (isSilent) {
+                                st.silentWindows++;
+                                // After ~2s of silence, try to decode what we have
+                                if (st.silentWindows > 30 && st.bits.length > 0) {
+                                    packetLog('<span class="warn">[TIMEOUT]</span> Silence. Attempting decode...');
+                                    attemptDecode();
+                                }
+                            } else if (bestFreq === FREQ0 || bestFreq === FREQ1) {
+                                st.silentWindows = 0;
+                                st.bits += (bestFreq === FREQ1 ? '1' : '0');
+                                onBitsUpdated();
+                            } else {
+                                // Ignore cal/sync tones during data (harmonics)
+                                st.silentWindows = 0;
+                            }
+                        }
+                    }
+                };
+
+                mic.connect(processor);
+                processor.connect(audioCtx.destination);
 
             } catch (err) {
                 let msg = 'Microphone access failed: ' + err.message;
@@ -667,7 +763,6 @@
                 const freq = Number(freqKey);
                 const mag = mags[freq] || 0;
                 const energy = mag / windowSize;
-                // Scale for display: typical strong-tone energy sits well above MIN_ENERGY.
                 const pct = Math.max(0, Math.min(100, (energy / 0.12) * 100));
 
                 const fillEl = document.getElementById(SIGNAL_BAR_IDS[freq]);
@@ -678,51 +773,6 @@
             }
         }
 
-        function handleDetection(freq, energy) {
-            const now = performance.now();
-
-            if (energy < MIN_ENERGY) {
-                return;
-            }
-
-            const st = recvState;
-            const sinceLast = now - st.lastSymbolTime;
-
-            if (st.phase === 'idle') {
-                if (freq === CALIBRATE_FREQ) {
-                    st.phase = 'calibrated';
-                    st.lastSymbolTime = now;
-                    setPhase('waiting', 'Calibration tone detected');
-                    packetLogReset('<span class="info">[CAL]</span> Calibration tone detected. Waiting for sync...');
-                }
-                return;
-            }
-
-            if (st.phase === 'calibrated') {
-                if (freq === SYNC_FREQ && sinceLast > SYMBOL_MS) {
-                    st.phase = 'synced';
-                    st.bits = '';
-                    st.expectedTotalBits = null;
-                    st.headerShown = false;
-                    st.lastSymbolTime = now;
-                    setPhase('active', 'Sync detected, receiving');
-                    packetLog('<span class="info">[SYNC]</span> Frame start detected. Receiving data...');
-                }
-                return;
-            }
-
-            if (st.phase === 'synced' || st.phase === 'reading') {
-                st.phase = 'reading';
-                if (sinceLast < SYMBOL_MS * 0.6) return; // avoid double-counting same symbol
-
-                if (freq === FREQ0 || freq === FREQ1) {
-                    st.bits += (freq === FREQ1 ? '1' : '0');
-                    st.lastSymbolTime = now;
-                    onBitsUpdated();
-                }
-            }
-        }
-
         function setRecvProgress(pct) {
             document.getElementById('recvProgress').style.width = pct + '%';
             document.getElementById('recvProgressLabel').innerText = Math.round(pct) + '%';
@@ -730,8 +780,9 @@
 
         function onBitsUpdated() {
             const st = recvState;
+            if (!st) return;
 
-            // Try to resolve the header (first 64 bits = 8 ASCII chars = payload length) as soon as available.
+            // Try to resolve the header (first 64 bits = 8 ASCII chars = payload length)
             if (!st.expectedTotalBits && st.bits.length >= 64) {
                 const headerStr = bitsToString(st.bits.slice(0, 64));
                 const payloadLen = parseInt(headerStr, 10);
@@ -739,12 +790,12 @@
                     st.expectedTotalBits = (8 + payloadLen + 5) * 8;
                     if (!st.headerShown) {
                         st.headerShown = true;
-                        packetLog('<span class="info">[HEADER]</span> Payload size: ' + payloadLen + ' bytes');
+                        packetLog('<span class="info">[HEADER]</span> Payload: ' + payloadLen + ' bytes (' + st.expectedTotalBits + ' bits)');
                     }
                 }
             }
 
-            // Live progress bar, now based on real expected length once known.
+            // Progress bar
             if (st.expectedTotalBits) {
                 const pct = Math.min(99, (st.bits.length / st.expectedTotalBits) * 100);
                 setRecvProgress(pct);
@@ -752,7 +803,7 @@
                 setRecvProgress(Math.min(8, (st.bits.length / 64) * 8));
             }
 
-            // Live packet view: show decoded bytes as they arrive, every full byte.
+            // Live packet view
             if (st.bits.length % 8 === 0 && st.bits.length >= 8) {
                 const newByteBits = st.bits.slice(-8);
                 const code = parseInt(newByteBits, 2);
@@ -760,26 +811,57 @@
                 appendLivePacketByte(code, printable);
             }
 
-            // Once we know the total expected length and have enough bits, decode.
+            // Status update
+            if (st.expectedTotalBits) {
+                setStatus('Receiving: ' + st.bits.length + ' / ' + st.expectedTotalBits + ' bits', '');
+            }
+
+            // All bits received — decode!
             if (st.expectedTotalBits && st.bits.length >= st.expectedTotalBits) {
                 finishDecode(st.bits.slice(0, st.expectedTotalBits));
-                st.phase = 'idle';
-                st.bits = '';
-                st.expectedTotalBits = null;
             }
+        }
+
+        function attemptDecode() {
+            const st = recvState;
+            if (!st) return;
+            if (st.bits.length >= 64) {
+                const headerStr = bitsToString(st.bits.slice(0, 64));
+                const payloadLen = parseInt(headerStr, 10);
+                if (!isNaN(payloadLen) && payloadLen > 0) {
+                    const needed = (8 + payloadLen + 5) * 8;
+                    if (st.bits.length >= needed) {
+                        finishDecode(st.bits.slice(0, needed));
+                        return;
+                    }
+                }
+            }
+            packetLog('<span class="err">[ERROR]</span> Incomplete: ' + st.bits.length + ' bits received.');
+            setStatus('Incomplete transfer. Try again closer.', 'error');
+            setPhase('error', 'Incomplete');
+            stopReceiver();
+        }
+
+        function stopReceiver() {
+            if (recvState && recvState.stream) {
+                recvState.stream.getTracks().forEach(t => t.stop());
+            }
+            if (recvState && recvState.processor) {
+                recvState.processor.disconnect();
+            }
+            recvState = null;
+            document.getElementById('recvBtn').disabled = false;
         }
 
         let liveByteBuffer = [];
         function appendLivePacketByte(code, printable) {
             liveByteBuffer.push({ code, printable });
-            // Keep the live view to the most recent ~64 bytes so it stays readable and fast.
             if (liveByteBuffer.length > 64) liveByteBuffer.shift();
 
             const hexLine = liveByteBuffer.map(b => b.code.toString(16).padStart(2, '0')).join(' ');
             const asciiLine = liveByteBuffer.map(b => b.printable).join('');
 
             const el = document.getElementById('packetView');
-            // Replace just the trailing live block (keeps SYNC/HEADER lines above it intact).
             const existing = el.innerHTML;
             const marker = '<!--LIVE-->';
             const idx = existing.indexOf(marker);
@@ -819,9 +901,10 @@
                 const actualCrc = crc16(payloadStr);
 
                 if (expectedCrc !== actualCrc) {
-                    setStatus('Transfer failed checksum (likely noise). Try again, closer and quieter.', 'error');
+                    setStatus('Checksum mismatch! Data corrupted by noise.', 'error');
                     setPhase('error', 'Checksum mismatch');
-                    packetLog('<span class="err">[ERROR]</span> Checksum mismatch \u2014 data discarded.');
+                    packetLog('<span class="err">[ERROR]</span> CRC mismatch \u2014 data corrupted. Try again closer.');
+                    stopReceiver();
                     return;
                 }
 
@@ -833,28 +916,27 @@
                 }
 
                 const blob = new Blob([arr], { type: obj.t });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = obj.n;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                const url = URL.createObjectURL(blob);
 
-                setStatus('File received and verified: ' + obj.n, 'success');
-                setPhase('idle', 'Done \u2014 listening again');
-                packetLog('<span class="info">[DONE]</span> ' + escapeHtml(obj.n) + ' verified and downloaded.');
-
+                // Show filename + download button in the summary
                 const summary = document.getElementById('receivedSummary');
-                summary.innerText = 'Received: ' + obj.n + ' (' + (binStr.length / 1024).toFixed(1) + ' KB, checksum OK)';
+                summary.innerHTML = '<strong>\u2705 ' + escapeHtml(obj.n) + '</strong> (' +
+                    (arr.length / 1024).toFixed(1) + ' KB, checksum OK)<br>' +
+                    '<a href="' + url + '" download="' + escapeHtml(obj.n) +
+                    '" style="display:inline-block;margin-top:8px;padding:8px 20px;background:#1e8e3e;color:white;border-radius:6px;text-decoration:none;font-size:13px;">\u2B07 Download</a>';
                 summary.classList.add('visible');
 
+                setStatus('File received: ' + obj.n, 'success');
+                setPhase('idle', 'Transfer complete');
+                packetLog('<span class="info">[DONE]</span> ' + escapeHtml(obj.n) + ' verified! Click Download to save.');
+
             } catch (err) {
-                setStatus('Could not decode the received data (noise or corruption).', 'error');
+                setStatus('Decode failed (noise or corruption).', 'error');
                 setPhase('error', 'Decode error');
                 packetLog('<span class="err">[ERROR]</span> Decode failed: ' + escapeHtml(err.message));
-            } finally {
-                setTimeout(() => { setRecvProgress(0); }, 1000);
             }
+
+            stopReceiver();
         }
 
         window.addEventListener('beforeunload', () => {
