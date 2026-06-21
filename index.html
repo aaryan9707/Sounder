@@ -3,368 +3,1069 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Acoustic Data Transfer</title>
+    <title>Audio Data Transfer - Auto Receive</title>
     <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { max-width: 600px; width: 100%; background: #1e293b; padding: 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        h1 { text-align: center; color: #38bdf8; margin-top: 0; font-size: 24px; }
-        .tabs { display: flex; margin-bottom: 20px; background: #0f172a; border-radius: 8px; padding: 4px; }
-        .tab { flex: 1; padding: 10px; text-align: center; cursor: pointer; color: #94a3b8; font-weight: 600; border-radius: 6px; transition: 0.2s; }
-        .tab.active { background: #38bdf8; color: #0f172a; }
-        .panel { display: none; }
-        .panel.active { display: block; }
-        textarea { width: 100%; padding: 12px; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 8px; margin-bottom: 15px; font-family: monospace; box-sizing: border-box; font-size: 14px; height: 120px; resize: vertical; }
-        button { padding: 12px 20px; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; transition: 0.2s; margin-bottom: 10px; }
-        button:hover { background: #0ea5e9; }
-        button:disabled { background: #475569; cursor: not-allowed; color: #94a3b8; }
-        .btn-secondary { background: #475569; color: #f8fafc; }
-        .btn-secondary:hover { background: #64748b; }
-        .btn-danger { background: #ef4444; color: #fff; }
-        .btn-danger:hover { background: #dc2626; }
-        .status { margin-top: 15px; padding: 12px; background: #0f172a; border-radius: 8px; text-align: center; font-family: monospace; min-height: 24px; font-size: 14px; border: 1px solid #334155; transition: 0.3s; }
-        .success { color: #4ade80; border-color: #4ade80; background: #064e3b; }
-        .error { color: #f87171; border-color: #f87171; }
-        .info { color: #94a3b8; font-size: 13px; text-align: center; margin-bottom: 15px; line-height: 1.5;}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .mode-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            flex: 1;
+            max-width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .mode-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .mode-card.active {
+            border: 3px solid #667eea;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%);
+        }
+
+        .mode-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .mode-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .mode-desc {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .status-area {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .dot-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        .dot.green { background: #28a745; box-shadow: 0 0 10px #28a745; }
+        .dot.yellow { background: #ffc107; box-shadow: 0 0 10px #ffc107; }
+        .dot.red { background: #dc3545; box-shadow: 0 0 10px #dc3545; }
+        .dot.gray { background: #6c757d; }
+        .dot.blue { background: #007bff; box-shadow: 0 0 10px #007bff; }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .status-label {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .status-message {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+            min-height: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: white;
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+        }
+
+        .file-info {
+            background: #e7f3ff;
+            border: 2px solid #b3d9ff;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .signal-indicator {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .signal-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .debug-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #666;
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            word-break: break-all;
+        }
+
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .data-preview {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            text-align: left;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .data-preview-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .auto-detect-badge {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1>📡 Audio Data Transfer System</h1>
+        
+        <!-- Mode Selection -->
+        <div class="mode-selector">
+            <div class="mode-card" id="sendMode" onclick="selectMode('send')">
+                <div class="mode-icon">📤</div>
+                <div class="mode-title">Send File</div>
+                <div class="mode-desc">Transmit file via audio signal</div>
+            </div>
+            <div class="mode-card" id="receiveMode" onclick="selectMode('receive')">
+                <div class="mode-icon">📥</div>
+                <div class="mode-title">Receive File</div>
+                <div class="mode-desc">Auto-detect & receive<span class="auto-detect-badge">AUTO</span></div>
+            </div>
+        </div>
 
-<div class="container">
-    <h1>📡 Auto Acoustic Transfer</h1>
-    
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('sender')">📤 Sender</div>
-        <div class="tab" onclick="switchTab('receiver')">📥 Receiver</div>
+        <!-- Transmit Panel -->
+        <div class="panel" id="txPanel">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #333;">📤 Send File</h2>
+            
+            <div class="status-area">
+                <div class="dot-container">
+                    <div id="txdot" class="dot gray"></div>
+                    <span id="txlbl" class="status-label">Ready</span>
+                </div>
+                <div id="txmsg" class="status-message">Select a file to transmit</div>
+                <div class="progress-bar">
+                    <div id="txProgress" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <input type="file" id="fileInput" onchange="fileSelected(this)">
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                    📁 Choose File
+                </button>
+                <button id="btnSend" class="btn btn-success" onclick="startTransmit()" disabled>
+                    📡 Start Transfer
+                </button>
+                <button id="btnStopTx" class="btn btn-danger hidden" onclick="stopTransmit()">
+                    ⏹️ Stop
+                </button>
+            </div>
+
+            <div id="fileInfo" class="file-info hidden">
+                <div id="fileName" class="file-name"></div>
+                <div id="fileSize" class="file-size"></div>
+            </div>
+
+            <div class="debug-info" id="txDebug"></div>
+        </div>
+
+        <!-- Receive Panel -->
+        <div class="panel" id="rxPanel">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #333;">📥 Auto Receive File</h2>
+            
+            <div class="status-area">
+                <div class="dot-container">
+                    <div id="rxdot" class="dot gray"></div>
+                    <span id="rxlbl" class="status-label">Auto-Detect Mode</span>
+                </div>
+                <div id="rxmsg" class="status-message">Click "Start Auto Receive" to begin</div>
+                <div class="signal-indicator">
+                    <div id="signalBar" class="signal-bar"></div>
+                </div>
+                <div class="progress-bar">
+                    <div id="rxProgress" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="btnListen" class="btn btn-primary" onclick="startAutoReceive()">
+                    🎤 Start Auto Receive
+                </button>
+                <button id="btnStopRx" class="btn btn-danger hidden" onclick="stopAutoReceive()">
+                    ⏹️ Stop
+                </button>
+            </div>
+
+            <div id="rxFileInfo" class="file-info hidden">
+                <div id="rxFileName" class="file-name"></div>
+                <div id="rxFileSize" class="file-size"></div>
+            </div>
+
+            <div id="dataPreview" class="data-preview hidden">
+                <div class="data-preview-title">📄 Received Data Preview:</div>
+                <div id="dataContent"></div>
+            </div>
+
+            <div class="debug-info" id="rxDebug"></div>
+        </div>
     </div>
 
-    <!-- SENDER PANEL -->
-    <div id="sender-panel" class="panel active">
-        <p class="info">Enter text (Max ~2KB). Uses 500Hz/2000Hz with strict timing guard.</p>
-        <textarea id="tx-data" placeholder="Enter data to send...">Hello! This is a 100% reliable auto-detect audio transfer. 🚀✅</textarea>
-        <button class="btn-secondary" onclick="loadSample()">Load 2KB Sample Data</button>
-        <button id="btn-send" onclick="startSending()">🔊 Send Data via Audio</button>
-        <div id="tx-status" class="status">Ready to send.</div>
-    </div>
-
-    <!-- RECEIVER PANEL -->
-    <div id="receiver-panel" class="panel">
-        <p class="info">Click 'Auto Receive' once. It will automatically detect, decode, and show data.</p>
-        <button id="btn-listen" onclick="startListening()">🎤 Auto Receive</button>
-        <button id="btn-stop" onclick="stopListening()" class="btn-danger" style="display:none;">⏹ Stop Listening</button>
-        <div id="rx-status" class="status">Waiting for auto-detect...</div>
-        <textarea id="rx-data" placeholder="Data will automatically appear here..." readonly style="margin-top:15px; min-height: 150px;"></textarea>
-    </div>
-</div>
-
-<script>
-    // --- CONFIGURATION ---
-    const FREQ_0 = 500;      
-    const FREQ_1 = 2000;     
-    const FREQ_SYNC = 1000;  
-    const BIT_DURATION = 0.03; // 30ms per bit
-    const SYNC_DURATION = 1.0; 
-    const GUARD_DURATION = 0.15; // 150ms silence between sync and data
-    
-    let audioCtx = null;
-    let isSending = false;
-    let isListening = false;
-    let micStream = null;
-    let analyser = null;
-    let rxAnimFrame = null;
-    let dataArray = null;
-    let binWidth = 0;
-
-    // --- UI FUNCTIONS ---
-    function switchTab(tab) {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    <script>
+        // ==================== GLOBAL VARIABLES ====================
+        let currentMode = null;
         
-        if(tab === 'sender') {
-            document.querySelectorAll('.tab')[0].classList.add('active');
-            document.getElementById('sender-panel').classList.add('active');
-        } else {
-            document.querySelectorAll('.tab')[1].classList.add('active');
-            document.getElementById('receiver-panel').classList.add('active');
-        }
-        if(isSending || isListening) stopAll();
-    }
-
-    function stopAll() {
-        if(isSending) { isSending = false; }
-        if(isListening) { stopListening(); }
-    }
-
-    function loadSample() {
-        let sample = "This is a 2KB sample data to test the reliability of the acoustic transfer system. ".repeat(25);
-        document.getElementById('tx-data').value = sample;
-    }
-
-    // --- CRC32 IMPLEMENTATION ---
-    const crcTable = (function() {
-        let crcTable = [];
-        for(let n = 0; n < 256; n++) {
-            let c = n;
-            for(let k = 0; k < 8; k++) {
-                c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
-            }
-            crcTable[n] = c;
-        }
-        return crcTable;
-    })();
-
-    function crc32(str) {
-        let crc = 0 ^ (-1);
-        for (let i = 0; i < str.length; i++) {
-            crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
-        }
-        return (crc ^ (-1)) >>> 0;
-    }
-
-    // --- SENDER LOGIC ---
-    async function startSending() {
-        if(isSending) return;
-        const data = document.getElementById('tx-data').value;
-        if(!data) { alert("Enter some data!"); return; }
-
-        const statusEl = document.getElementById('tx-status');
-        const btn = document.getElementById('btn-send');
+        // Transmitter variables
+        let txCtx = null;
+        let txOsc = null;
+        let txGain = null;
+        let fileToSend = null;
+        let fileBytes = null;
+        let transmitting = false;
+        let txInterval = null;
+        let txByteIndex = 0;
+        let txBitIndex = 0;
         
-        const payloadBytes = new TextEncoder().encode(data);
-        const len = payloadBytes.length;
-        const crc = crc32(data);
+        // Receiver variables
+        let listening = false;
+        let rCtx = null;
+        let anNode = null;
+        let micStream = null;
+        let rAF = null;
         
-        let bits = [];
-        for (let i = 15; i >= 0; i--) bits.push((len >> i) & 1);
-        for (let byte of payloadBytes) {
-            for (let j = 7; j >= 0; j--) bits.push((byte >> j) & 1);
-        }
-        for (let i = 31; i >= 0; i--) bits.push((crc >> i) & 1);
+        // Receiver state machine
+        let rxState = 'IDLE';
+        let rxBuffer = [];
+        let rxByteCount = 0;
+        let rxChecksum = 0;
+        let bitCellCount = 0;
+        let receivedData = [];
+        let totalBytes = 0;
+        let signalStrength = 0;
+        let bitDetectionBuffer = [];
+        let lastSampleTime = 0;
+        let rxLogLines = [];
 
-        statusEl.textContent = `Preparing ${bits.length} bits...`;
-        statusEl.className = 'status';
-        btn.disabled = true;
-        isSending = true;
+        // Constants
+        const SAMPLE_RATE = 44100;
+        const BIT_DURATION_MS = 100;
+        const CARRIER_FREQ = 3000;
+        const START_MARKER = [0xAA, 0x55, 0xAA, 0x55];
+        const END_MARKER = [0x55, 0xAA, 0x55, 0xAA];
+        const AMPLITUDE_THRESHOLD = 0.1;
+        const MAX_LOG_LINES = 50;
 
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') await audioCtx.resume();
-        
-        statusEl.textContent = "Sending Sync Preamble (1s)...";
-        await playTone(FREQ_SYNC, SYNC_DURATION);
+        // ==================== HELPER FUNCTIONS ====================
+        function el(id) { return document.getElementById(id); }
+        function showEl(id) { el(id).classList.remove('hidden'); }
+        function hideEl(id) { el(id).classList.add('hidden'); }
 
-        statusEl.textContent = "Sending Guard Silence...";
-        await delay(GUARD_DURATION * 1000);
-
-        for (let i = 0; i < bits.length; i++) {
-            if(!isSending) break;
-            let freq = bits[i] === 0 ? FREQ_0 : FREQ_1;
-            await playTone(freq, BIT_DURATION);
-            if (i % 100 === 0) statusEl.textContent = `Sending bit ${i + 1}/${bits.length}...`;
-        }
-
-        statusEl.textContent = "✅ Transmission Complete!";
-        statusEl.className = 'status success';
-        btn.disabled = false;
-        isSending = false;
-        if(audioCtx) audioCtx.close();
-    }
-
-    function playTone(freq, duration) {
-        return new Promise(resolve => {
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.type = 'square'; 
-            osc.frequency.value = freq;
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime); 
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-            osc.onended = resolve;
-        });
-    }
-
-    function delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    // --- RECEIVER LOGIC ---
-    async function startListening() {
-        if(isListening) return;
-        const statusEl = document.getElementById('rx-status');
-        
-        try {
-            micStream = await navigator.mediaDevices.getUserMedia({ 
-                audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
-            });
-        } catch(e) {
-            statusEl.textContent = "❌ Microphone access denied!";
-            statusEl.className = 'status error';
-            return;
-        }
-
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioCtx.createMediaStreamSource(micStream);
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 2048; 
-        source.connect(analyser);
-        
-        binWidth = audioCtx.sampleRate / analyser.fftSize;
-        dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-        isListening = true;
-        document.getElementById('btn-listen').style.display = 'none';
-        document.getElementById('btn-stop').style.display = 'block';
-        statusEl.textContent = "🎧 Auto-detect active. Listening for sync...";
-        statusEl.className = 'status';
-        
-        initRxState();
-        processAudio();
-    }
-
-    function stopListening() {
-        isListening = false;
-        if(rxAnimFrame) cancelAnimationFrame(rxAnimFrame);
-        if(micStream) micStream.getTracks().forEach(t => t.stop());
-        if(audioCtx) audioCtx.close();
-        
-        document.getElementById('btn-listen').style.display = 'block';
-        document.getElementById('btn-stop').style.display = 'none';
-        document.getElementById('rx-status').textContent = "Stopped.";
-    }
-
-    // --- DSP & AUTO STATE MACHINE ---
-    let rxState = 'IDLE'; // IDLE -> SYNC -> GUARD -> DATA
-    let guardStartTime = 0;
-    let currentBitStart = 0;
-    let bitEnergy0 = 0, bitEnergy1 = 0, bitSamples = 0;
-    let bitBuffer = [];
-
-    function initRxState() {
-        rxState = 'IDLE';
-        bitBuffer = [];
-    }
-
-    function getMag(freq) {
-        let bin = Math.round(freq / binWidth);
-        let sum = 0, count = 0;
-        for (let i = bin - 1; i <= bin + 1; i++) {
-            if (i >= 0 && i < dataArray.length) { sum += dataArray[i]; count++; }
-        }
-        return count > 0 ? sum / count : 0;
-    }
-
-    function updateStatus(msg, type = '') {
-        const el = document.getElementById('rx-status');
-        el.textContent = msg;
-        el.className = 'status ' + type;
-    }
-
-    function processAudio() {
-        if(!isListening) return;
-        rxAnimFrame = requestAnimationFrame(processAudio);
-
-        analyser.getByteFrequencyData(dataArray);
-        let m0 = getMag(FREQ_0);
-        let mSync = getMag(FREQ_SYNC);
-        let m1 = getMag(FREQ_1);
-        let now = performance.now();
-
-        if (rxState === 'IDLE') {
-            // Auto-detect sync tone
-            if (mSync > 100 && mSync > m0 * 1.5 && mSync > m1 * 1.5) {
-                rxState = 'SYNC';
-                updateStatus('✅ Sync detected! Waiting for data guard...');
-            }
-        } 
-        else if (rxState === 'SYNC') {
-            // Wait for sync tone to drop
-            if (mSync < 50) {
-                rxState = 'GUARD';
-                guardStartTime = now;
+        function debugTx(msg) {
+            console.log('[TX]', msg);
+            const debugEl = el('txDebug');
+            if (debugEl) {
+                const time = new Date().toLocaleTimeString();
+                debugEl.innerHTML = `<div class="log-entry">[${time}] ${msg}</div>` + debugEl.innerHTML;
+                const lines = debugEl.getElementsByClassName('log-entry');
+                while (lines.length > 20) lines[lines.length - 1].remove();
             }
         }
-        else if (rxState === 'GUARD') {
-            // Wait for 150ms guard time to finish
-            if (now - guardStartTime >= (GUARD_DURATION * 1000)) {
-                rxState = 'DATA';
-                currentBitStart = now;
-                bitEnergy0 = 0; bitEnergy1 = 0; bitSamples = 0;
-                updateStatus('⚡ Receiving data bits...');
-            }
-        }
-        else if (rxState === 'DATA') {
-            // Accumulate energy for the current bit
-            bitEnergy0 += m0;
-            bitEnergy1 += m1;
-            bitSamples++;
 
-            // Check if 30ms (BIT_DURATION) has passed
-            if (now - currentBitStart >= (BIT_DURATION * 1000)) {
-                if(bitSamples > 0) {
-                    let avg0 = bitEnergy0 / bitSamples;
-                    let avg1 = bitEnergy1 / bitSamples;
-                    let bit = (avg1 > avg0) ? 1 : 0;
-                    bitBuffer.push(bit);
-                    
-                    if (bitBuffer.length % 8 === 0) {
-                        updateStatus(`📥 Receiving... Bits: ${bitBuffer.length}`);
-                        if (tryDecode()) {
-                            // Success! Reset to IDLE to listen for next transmission
-                            rxState = 'IDLE'; 
-                            updateStatus('✅ Data Received & Verified Perfectly!', 'success');
-                            return;
-                        }
-                    }
-                }
-                // Advance exactly 30ms to prevent timing drift
-                currentBitStart += (BIT_DURATION * 1000); 
-                bitEnergy0 = 0; bitEnergy1 = 0; bitSamples = 0;
+        function debugRx(msg) {
+            console.log('[RX]', msg);
+            rxLogLines.unshift(`[${new Date().toLocaleTimeString()}] ${msg}`);
+            if (rxLogLines.length > MAX_LOG_LINES) rxLogLines.pop();
+            const debugEl = el('rxDebug');
+            if (debugEl) {
+                debugEl.innerHTML = rxLogLines.map(line => `<div class="log-entry">${line}</div>`).join('');
             }
         }
-    }
 
-    function tryDecode() {
-        if (bitBuffer.length < 48) return false;
-        
-        // Read length (first 16 bits)
-        let len = 0;
-        for (let i = 0; i < 16; i++) {
-            len = (len << 1) | bitBuffer[i];
+        function setTxStatus(dot, lbl, msg) {
+            el('txdot').className = 'dot ' + dot;
+            el('txlbl').textContent = lbl;
+            el('txmsg').textContent = msg;
         }
-        
-        if (len < 1 || len > 4096) return false;
-        
-        let totalBits = 16 + (len * 8) + 32;
-        if (bitBuffer.length < totalBits) return false;
-        
-        // Read payload
-        let payloadBits = bitBuffer.slice(16, 16 + len * 8);
-        let payloadBytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            let byte = 0;
-            for (let j = 0; j < 8; j++) {
-                byte = (byte << 1) | payloadBits[i * 8 + j];
+
+        function setRxStatus(dot, lbl, msg) {
+            el('rxdot').className = 'dot ' + dot;
+            el('rxlbl').textContent = lbl;
+            el('rxmsg').textContent = msg;
+        }
+
+        function updateTxProgress(percent) {
+            el('txProgress').style.width = Math.min(100, percent) + '%';
+        }
+
+        function updateRxProgress(percent) {
+            el('rxProgress').style.width = Math.min(100, percent) + '%';
+        }
+
+        function updateSignalStrength(strength) {
+            signalStrength = Math.min(100, Math.max(0, strength * 100));
+            el('signalBar').style.width = signalStrength + '%';
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
             }
-            payloadBytes[i] = byte;
-        }
-        
-        // Read CRC
-        let crcBits = bitBuffer.slice(16 + len * 8, totalBits);
-        let recvCrc = 0;
-        for (let i = 0; i < 32; i++) {
-            recvCrc = (recvCrc << 1) | crcBits[i];
-        }
-        
-        let payloadStr = new TextDecoder().decode(payloadBytes);
-        
-        // Verify CRC32
-        if (recvCrc === crc32(payloadStr)) {
-            document.getElementById('rx-data').value = payloadStr;
             return true;
         }
-        
-        return false;
-    }
-</script>
+
+        function bitsToByte(bits) {
+            let byte = 0;
+            for (let i = 0; i < 8 && i < bits.length; i++) {
+                byte = (byte << 1) | (bits[i] || 0);
+            }
+            return byte;
+        }
+
+        function calculateChecksum(data) {
+            let checksum = 0;
+            for (let i = 0; i < data.length; i++) {
+                checksum ^= data[i];
+            }
+            return checksum;
+        }
+
+        // ==================== MODE SELECTION ====================
+        function selectMode(mode) {
+            currentMode = mode;
+            
+            document.querySelectorAll('.mode-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            el(mode + 'Mode').classList.add('active');
+            
+            el('txPanel').classList.toggle('active', mode === 'send');
+            el('rxPanel').classList.toggle('active', mode === 'receive');
+            
+            if (mode === 'send') {
+                stopAutoReceive();
+            } else {
+                stopTransmit();
+            }
+        }
+
+        // ==================== TRANSMITTER FUNCTIONS ====================
+        function fileSelected(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            fileToSend = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                fileBytes = new Uint8Array(e.target.result);
+                el('fileName').textContent = '📄 ' + file.name;
+                el('fileSize').textContent = 'Size: ' + formatBytes(fileBytes.length);
+                showEl('fileInfo');
+                el('btnSend').disabled = false;
+                setTxStatus('blue', 'Ready', 'File loaded. Press Start Transfer');
+                debugTx('File loaded: ' + file.name + ' (' + fileBytes.length + ' bytes)');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function startTransmit() {
+            if (!fileBytes || transmitting) return;
+            
+            try {
+                txCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+                txOsc = txCtx.createOscillator();
+                txGain = txCtx.createGain();
+                
+                txOsc.type = 'square';
+                txOsc.frequency.value = CARRIER_FREQ;
+                txGain.gain.value = 0;
+                
+                txOsc.connect(txGain);
+                txGain.connect(txCtx.destination);
+                txOsc.start();
+                
+                transmitting = true;
+                txByteIndex = 0;
+                txBitIndex = 0;
+                
+                hideEl('btnSend');
+                showEl('btnStopTx');
+                el('fileInput').disabled = true;
+                setTxStatus('green', 'Transmitting', 'Sending...');
+                updateTxProgress(0);
+                
+                transmitNextBit();
+                debugTx('Transmission started');
+            } catch (error) {
+                setTxStatus('red', 'Error', 'Failed: ' + error.message);
+                debugTx('Error: ' + error.message);
+            }
+        }
+
+        function getCurrentByte() {
+            if (txByteIndex < START_MARKER.length) {
+                return START_MARKER[txByteIndex];
+            } else if (txByteIndex < START_MARKER.length + 4) {
+                const sizeIndex = txByteIndex - START_MARKER.length;
+                return (fileBytes.length >> (8 * (3 - sizeIndex))) & 0xFF;
+            } else if (txByteIndex < START_MARKER.length + 4 + fileBytes.length) {
+                return fileBytes[txByteIndex - START_MARKER.length - 4];
+            } else if (txByteIndex === START_MARKER.length + 4 + fileBytes.length) {
+                return calculateChecksum(fileBytes);
+            } else if (txByteIndex < START_MARKER.length + 4 + fileBytes.length + 1 + END_MARKER.length) {
+                return END_MARKER[txByteIndex - START_MARKER.length - 4 - fileBytes.length - 1];
+            }
+            return null;
+        }
+
+        function transmitNextBit() {
+            if (!transmitting) return;
+            
+            const currentByte = getCurrentByte();
+            if (currentByte === null) {
+                finishTransmission();
+                return;
+            }
+            
+            const bit = (currentByte >> (7 - txBitIndex)) & 1;
+            
+            if (txGain && txCtx) {
+                txGain.gain.setTargetAtTime(bit === 1 ? 0.8 : 0.0, txCtx.currentTime, 0.001);
+            }
+            
+            txBitIndex++;
+            if (txBitIndex >= 8) {
+                txBitIndex = 0;
+                txByteIndex++;
+                
+                if (txByteIndex > START_MARKER.length + 4 && txByteIndex <= START_MARKER.length + 4 + fileBytes.length) {
+                    const progress = ((txByteIndex - START_MARKER.length - 4) / fileBytes.length * 100).toFixed(1);
+                    updateTxProgress(progress);
+                    setTxStatus('green', 'Transmitting', `Sending: ${progress}%`);
+                }
+            }
+            
+            txInterval = setTimeout(transmitNextBit, BIT_DURATION_MS);
+        }
+
+        function finishTransmission() {
+            transmitting = false;
+            if (txInterval) { clearTimeout(txInterval); txInterval = null; }
+            if (txGain && txCtx) txGain.gain.setTargetAtTime(0, txCtx.currentTime, 0.01);
+            
+            setTimeout(() => {
+                cleanupTransmitter();
+                setTxStatus('green', 'Complete', 'File transmitted!');
+                updateTxProgress(100);
+                showEl('btnSend');
+                hideEl('btnStopTx');
+                el('fileInput').disabled = false;
+                debugTx('Transmission complete');
+            }, 500);
+        }
+
+        function stopTransmit() {
+            transmitting = false;
+            if (txInterval) { clearTimeout(txInterval); txInterval = null; }
+            if (txGain && txCtx) txGain.gain.setTargetAtTime(0, txCtx.currentTime, 0.01);
+            
+            setTimeout(() => {
+                cleanupTransmitter();
+                setTxStatus('gray', 'Stopped', 'Transmission stopped');
+                updateTxProgress(0);
+                showEl('btnSend');
+                hideEl('btnStopTx');
+                el('fileInput').disabled = false;
+                debugTx('Stopped by user');
+            }, 100);
+        }
+
+        function cleanupTransmitter() {
+            if (txOsc) { try { txOsc.stop(); } catch (e) {} txOsc.disconnect(); txOsc = null; }
+            if (txGain) { txGain.disconnect(); txGain = null; }
+            if (txCtx) { try { txCtx.close(); } catch (e) {} txCtx = null; }
+        }
+
+        // ==================== AUTO RECEIVER FUNCTIONS ====================
+        async function startAutoReceive() {
+            if (listening) return;
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { 
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                        channelCount: 1,
+                        sampleRate: SAMPLE_RATE
+                    } 
+                });
+                
+                micStream = stream;
+                rCtx = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: SAMPLE_RATE,
+                    latencyHint: 'interactive'
+                });
+                
+                const source = rCtx.createMediaStreamSource(stream);
+                anNode = rCtx.createAnalyser();
+                anNode.fftSize = 4096;
+                anNode.smoothingTimeConstant = 0.2;
+                anNode.minDecibels = -100;
+                anNode.maxDecibels = -10;
+                source.connect(anNode);
+                
+                listening = true;
+                resetRxState();
+                rxLogLines = [];
+                bitDetectionBuffer = [];
+                lastSampleTime = Date.now();
+                
+                processAudio();
+                
+                hideEl('btnListen');
+                showEl('btnStopRx');
+                hideEl('rxFileInfo');
+                hideEl('dataPreview');
+                setRxStatus('green', '🔍 Auto-Detecting', 'Listening for audio signal...');
+                updateRxProgress(0);
+                updateSignalStrength(0);
+                
+                debugRx('🚀 Auto-receive started - waiting for signal');
+            } catch (error) {
+                setRxStatus('red', 'Error', 'Microphone access denied');
+                debugRx('Error: ' + error.message);
+            }
+        }
+
+        function stopAutoReceive() {
+            listening = false;
+            if (rAF) { cancelAnimationFrame(rAF); rAF = null; }
+            cleanupReceiver();
+            resetRxState();
+            
+            hideEl('btnStopRx');
+            showEl('btnListen');
+            hideEl('rxFileInfo');
+            hideEl('dataPreview');
+            setRxStatus('gray', 'Stopped', 'Auto-receive stopped');
+            updateRxProgress(0);
+            updateSignalStrength(0);
+            
+            debugRx('Auto-receive stopped');
+        }
+
+        function cleanupReceiver() {
+            if (rCtx) { try { rCtx.close(); } catch (e) {} rCtx = null; }
+            anNode = null;
+            if (micStream) {
+                micStream.getTracks().forEach(t => t.stop());
+                micStream = null;
+            }
+        }
+
+        function resetRxState() {
+            rxBuffer = [];
+            rxByteCount = 0;
+            rxChecksum = 0;
+            rxState = 'IDLE';
+            bitCellCount = 0;
+            receivedData = [];
+            totalBytes = 0;
+            bitDetectionBuffer = [];
+        }
+
+        function processAudio() {
+            if (!listening) return;
+            
+            const bufferLength = anNode.fftSize;
+            const dataArray = new Float32Array(bufferLength);
+            anNode.getFloatTimeDomainData(dataArray);
+            
+            let maxAmplitude = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                const abs = Math.abs(dataArray[i]);
+                if (abs > maxAmplitude) maxAmplitude = abs;
+            }
+            
+            updateSignalStrength(maxAmplitude * 3);
+            
+            const currentTime = Date.now();
+            const elapsed = currentTime - lastSampleTime;
+            
+            if (elapsed >= BIT_DURATION_MS * 0.8) {
+                const detectedBit = maxAmplitude > AMPLITUDE_THRESHOLD ? 1 : 0;
+                bitDetectionBuffer.push(detectedBit);
+                
+                if (bitDetectionBuffer.length >= 1) {
+                    processBit(bitDetectionBuffer.shift());
+                }
+                
+                lastSampleTime = currentTime;
+            }
+            
+            rAF = requestAnimationFrame(processAudio);
+        }
+
+        function processBit(bit) {
+            switch(rxState) {
+                case 'IDLE':
+                    rxBuffer.push(bit);
+                    if (rxBuffer.length > 64) rxBuffer.shift();
+                    
+                    if (rxBuffer.length >= 32 && detectStartMarker()) {
+                        rxState = 'HEADER';
+                        rxBuffer = [];
+                        bitCellCount = 0;
+                        totalBytes = 0;
+                        receivedData = [];
+                        setRxStatus('yellow', '🎯 Signal Detected!', 'Start marker found - reading header...');
+                        debugRx('✅ START MARKER DETECTED');
+                    }
+                    break;
+                    
+                case 'HEADER':
+                    rxBuffer.push(bit);
+                    bitCellCount++;
+                    
+                    if (bitCellCount >= 32) {
+                        const headerBits = rxBuffer.slice(-32);
+                        const headerBytes = [];
+                        for (let i = 0; i < 32; i += 8) {
+                            headerBytes.push(bitsToByte(headerBits.slice(i, i + 8)));
+                        }
+                        
+                        totalBytes = (headerBytes[0] << 24) | (headerBytes[1] << 16) | 
+                                    (headerBytes[2] << 8) | headerBytes[3];
+                        rxByteCount = totalBytes;
+                        rxBuffer = [];
+                        bitCellCount = 0;
+                        rxChecksum = 0;
+                        rxState = 'DATA';
+                        
+                        el('rxFileName').textContent = '📥 Auto-detected file';
+                        el('rxFileSize').textContent = 'Expected size: ' + formatBytes(totalBytes);
+                        showEl('rxFileInfo');
+                        setRxStatus('yellow', '📡 Receiving Data', `File size: ${formatBytes(totalBytes)}`);
+                        debugRx(`📏 File size: ${totalBytes} bytes (${formatBytes(totalBytes)})`);
+                    }
+                    break;
+                    
+                case 'DATA':
+                    rxBuffer.push(bit);
+                    bitCellCount++;
+                    
+                    if (bitCellCount >= 8) {
+                        const byte = bitsToByte(rxBuffer.slice(-8));
+                        
+                        if (receivedData.length < totalBytes) {
+                            rxChecksum ^= byte;
+                            receivedData.push(byte);
+                            rxByteCount--;
+                            
+                            const progress = ((receivedData.length / totalBytes) * 100).toFixed(1);
+                            updateRxProgress(progress);
+                            
+                            if (receivedData.length % 100 === 0 || receivedData.length === totalBytes) {
+                                setRxStatus('yellow', '📡 Receiving', 
+                                    `${progress}% (${receivedData.length}/${totalBytes} bytes)`);
+                                debugRx(`📦 Data: ${receivedData.length}/${totalBytes} bytes (${progress}%)`);
+                            }
+                            
+                            if (rxByteCount <= 0) {
+                                rxState = 'CHECKSUM';
+                                rxBuffer = [];
+                                bitCellCount = 0;
+                                setRxStatus('yellow', '🔍 Verifying', 'Checking data integrity...');
+                                debugRx('✅ Data complete - verifying checksum');
+                            }
+                        }
+                    }
+                    break;
+                    
+                case 'CHECKSUM':
+                    rxBuffer.push(bit);
+                    bitCellCount++;
+                    
+                    if (bitCellCount >= 8) {
+                        const receivedChecksum = bitsToByte(rxBuffer.slice(-8));
+                        rxBuffer = [];
+                        bitCellCount = 0;
+                        rxState = 'END_MARKER';
+                        setRxStatus('yellow', '🔍 Verifying', 'Looking for end marker...');
+                        debugRx(`🔑 Checksum: 0x${receivedChecksum.toString(16).padStart(2, '0')}`);
+                    }
+                    break;
+                    
+                case 'END_MARKER':
+                    rxBuffer.push(bit);
+                    
+                    if (rxBuffer.length >= 32) {
+                        const markerBits = rxBuffer.slice(-32);
+                        const markerBytes = [];
+                        for (let i = 0; i < 32; i += 8) {
+                            markerBytes.push(bitsToByte(markerBits.slice(i, i + 8)));
+                        }
+                        
+                        if (arraysEqual(markerBytes, END_MARKER)) {
+                            const calculatedChecksum = calculateChecksum(receivedData);
+                            debugRx(`🏁 End marker found! Checksum: calc=0x${calculatedChecksum.toString(16)}`);
+                            
+                            if (rxChecksum === calculatedChecksum) {
+                                onFileReceivedAuto();
+                            } else {
+                                setRxStatus('red', '❌ Error', 'Checksum mismatch! Auto-retrying...');
+                                debugRx('❌ CHECKSUM FAILED - restarting detection');
+                                setTimeout(() => {
+                                    resetRxState();
+                                    setRxStatus('green', '🔍 Auto-Detecting', 'Listening for retransmission...');
+                                    updateRxProgress(0);
+                                }, 2000);
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+
+        function detectStartMarker() {
+            if (rxBuffer.length < 32) return false;
+            
+            for (let offset = 0; offset <= rxBuffer.length - 32; offset++) {
+                const bits = rxBuffer.slice(offset, offset + 32);
+                const bytes = [];
+                for (let i = 0; i < 32; i += 8) {
+                    bytes.push(bitsToByte(bits.slice(i, i + 8)));
+                }
+                
+                if (arraysEqual(bytes, START_MARKER)) {
+                    debugRx(`🎯 Start marker at offset ${offset}`);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function onFileReceivedAuto() {
+            listening = false;
+            if (rAF) { cancelAnimationFrame(rAF); rAF = null; }
+            cleanupReceiver();
+            
+            setRxStatus('green', '✅ Complete!', `File received successfully! (${formatBytes(receivedData.length)})`);
+            updateRxProgress(100);
+            
+            el('rxFileName').textContent = '✅ File received successfully!';
+            el('rxFileSize').textContent = 'Size: ' + formatBytes(receivedData.length);
+            showEl('rxFileInfo');
+            
+            hideEl('btnStopRx');
+            showEl('btnListen');
+            
+            // Auto-display data preview
+            displayDataPreview();
+            
+            // Auto-save the file
+            autoSaveFile();
+            
+            debugRx(`🎉 FILE RECEIVED SUCCESSFULLY - ${receivedData.length} bytes`);
+            debugRx('💾 File auto-saved and data displayed');
+        }
+
+        function displayDataPreview() {
+            const dataPreview = el('dataPreview');
+            const dataContent = el('dataContent');
+            
+            showEl('dataPreview');
+            
+            // Try to display as text if it's a text file
+            try {
+                const textDecoder = new TextDecoder('utf-8');
+                const text = textDecoder.decode(new Uint8Array(receivedData));
+                
+                // Check if it looks like text (printable characters)
+                const printableCount = text.split('').filter(c => {
+                    const code = c.charCodeAt(0);
+                    return (code >= 32 && code <= 126) || code === 10 || code === 13 || code === 9;
+                }).length;
+                
+                if (printableCount > text.length * 0.8) {
+                    // It's likely a text file
+                    const preview = text.substring(0, 2000);
+                    dataContent.innerHTML = '<strong style="color: #28a745;">📝 Text File Detected:</strong>\n\n' + 
+                        preview.replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+                        (text.length > 2000 ? '\n\n... (truncated, full file saved)' : '');
+                } else {
+                    // Binary file - show hex dump
+                    showHexDump(dataContent);
+                }
+            } catch (e) {
+                // Binary file - show hex dump
+                showHexDump(dataContent);
+            }
+        }
+
+        function showHexDump(container) {
+            let hexDump = '<strong style="color: #ffc107;">🔢 Binary/Hex Data:</strong>\n\n';
+            const previewLength = Math.min(receivedData.length, 256);
+            
+            for (let i = 0; i < previewLength; i += 16) {
+                const offset = i.toString(16).padStart(8, '0');
+                const bytes = receivedData.slice(i, Math.min(i + 16, previewLength));
+                const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+                const ascii = Array.from(bytes).map(b => {
+                    return (b >= 32 && b <= 126) ? String.fromCharCode(b) : '.';
+                }).join('');
+                
+                hexDump += `${offset}  ${hex.padEnd(48)}  ${ascii}\n`;
+            }
+            
+            if (receivedData.length > 256) {
+                hexDump += `\n... (${receivedData.length - 256} more bytes, full file saved)`;
+            }
+            
+            container.textContent = hexDump;
+        }
+
+        function autoSaveFile() {
+            if (receivedData.length === 0) return;
+            
+            try {
+                const uint8Array = new Uint8Array(receivedData);
+                const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `received_file_${Date.now()}.bin`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                debugRx('💾 File auto-saved successfully');
+            } catch (error) {
+                debugRx('❌ Auto-save failed: ' + error.message);
+            }
+        }
+
+        // ==================== INITIALIZATION ====================
+        function init() {
+            selectMode('send');
+        }
+
+        window.addEventListener('beforeunload', () => {
+            stopTransmit();
+            stopAutoReceive();
+        });
+
+        init();
+    </script>
 </body>
 </html>
