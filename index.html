@@ -656,6 +656,15 @@ async function initRecv() {
     resetRecvUI();
     debugLines = [];
 
+    // Check if browser blocks getUserMedia (e.g. file:// path)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const errorMsg = 'Microphone access blocked on local file paths (file://). Please run via a local web server (http://localhost) to enable it.';
+        dbg('Microphone error: ' + errorMsg);
+        el('rlt').textContent = 'Secure Context Required';
+        el('rlh').innerHTML = 'Browser blocks microphone access on local file paths.<br><br><strong>To fix:</strong> Run a local server (e.g., <code>npx serve</code> or <code>python -m http.server</code>) and open <strong>http://localhost:port</strong>.';
+        return;
+    }
+
     // Always request a fresh mic stream
     try {
         if (micStream) {
