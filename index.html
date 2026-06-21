@@ -721,6 +721,7 @@ function startListen() {
     anNode.smoothingTimeConstant = 0.4;
     anNode.minDecibels = -100;
     anNode.maxDecibels = -10;
+    // Connect nodes
     source.connect(anNode);
 
     var freqData = new Uint8Array(anNode.frequencyBinCount);
@@ -775,9 +776,8 @@ function startListen() {
         var e1 = energy(C.F1, C.TOL);
         var mx = Math.max(es, e0, e1);
 
-        // Log every 50th frame to avoid spam
         frameCount++;
-        if (frameCount % 50 === 0) {
+        if (frameCount % 100 === 0) {
             dbg('Frame ' + frameCount + ': sync=' + es.toFixed(0) + ' f0=' + e0.toFixed(0) + ' f1=' + e1.toFixed(0) + ' thresh=' + C.THRESH + ' state=' + rxSt);
         }
 
@@ -791,17 +791,23 @@ function startListen() {
         return 'UNKNOWN';
     }
 
-    // Majority vote
-    function vote(samples) {
-        var zeros = 0, ones = 0;
-        for (var i = 0; i < samples.length; i++) {
-            if (samples[i] === 0) zeros++; else ones++;
-        }
-        return ones > zeros ? 1 : 0;
-    }
+    // Script processor for sample-accurate processing
+    var scriptNode = rCtx.createScriptProcessor(512, 1, 1);
+    
+    var syncSamples = 0;
+    var gapSamples = 0;
+    var sampleCounter = 0;
+    var votes = { zero: 0, one: 0, sync: 0, silence: 0 };
+    var samplesPerBit = rCtx.sampleRate * C.BIT;
+    
+    anNode.connect(scriptNode);
+    scriptNode.connect(rCtx.destination); // Required by some browsers to trigger audioprocess
+    
+    scriptNode.onaudioprocess = function(e) {
+        // Output silence to prevent feedback loop
+        var output = e.outputBuffer.getChannelData(0);
+        for (var i = 0; i < output.length; i++) output[i] = 0;
 
-    // Main analysis loop
-    aTimer = setInterval(function() {
         if (!listening) return;
 
         var sig = classify();
@@ -809,22 +815,22 @@ function startListen() {
         switch (rxSt) {
             case 'IDLE':
                 if (sig === 'SYNC') {
-                    syncN++;
-                    if (syncN >= C.SMIN) {
+                    syncSamples += 512;
+                    if (syncSamples >= rCtx.sampleRate * 0.3) {
                         rxSt = 'SYNC_DETECTED';
-                        silN = 0;
-                        dbg('>> SYNC detected after ' + syncN + ' frames');
-                        setRS('on', 'Sync Detected', 'Synchronization received, waiting for data...');
+                        gapSamples = 0;
+                        dbg('>> SYNC detected. Waiting for gap...');
+                        setRS('on', 'Sync Detected', 'Sync received, waiting for gap...');
                     }
                 } else {
-                    if (syncN > 0) syncN = Math.max(0, syncN - 2);
+                    syncSamples = Math.max(0, syncSamples - 256);
                 }
                 break;
 
             case 'SYNC_DETECTED':
                 if (sig === 'SILENCE' || sig === 'UNKNOWN') {
-                    silN++;
-                    if (silN >= C.GMIN) {
+                    gapSamples += 512;
+                    if (gapSamples >= rCtx.sampleRate * 0.15) {
                         rxSt = 'RECEIVING';
                         rxT0 = Date.now();
                         bitBuf = [];
@@ -832,56 +838,49 @@ function startListen() {
                         expBits = -1;
                         hdr = null;
                         endN = 0;
+                        sampleCounter = 0;
+                        votes = { zero: 0, one: 0, sync: 0, silence: 0 };
                         dbg('>> GAP detected, now RECEIVING data');
                         setRS('on', 'Receiving', 'Decoding incoming data...');
                         showEl('rprogWrap');
                     }
                 } else if (sig === 'SYNC') {
-                    silN = 0; // still in sync tone, wait
+                    gapSamples = 0;
                 } else {
-                    // Data tone without gap? Might be noise. Reset gap counter.
-                    silN = 0;
+                    gapSamples = 0;
                 }
                 break;
 
             case 'RECEIVING':
-                // Check for end sync
+                // Check end sync
                 if (sig === 'SYNC') {
-                    endN++;
-                    if (endN >= C.SMIN) {
-                        // Flush remaining samples
-                        if (bitBuf.length >= Math.floor(SPB / 2)) {
-                            allBits.push(vote(bitBuf));
-                        }
+                    votes.sync++;
+                } else if (sig === 'ZERO') {
+                    votes.zero++;
+                } else if (sig === 'ONE') {
+                    votes.one++;
+                } else {
+                    votes.silence++;
+                }
+
+                sampleCounter += 512;
+
+                if (sampleCounter >= samplesPerBit) {
+                    // Check if sync dominated during this bit duration (End Sync signal)
+                    if (votes.sync > votes.zero && votes.sync > votes.one && votes.sync > 5) {
                         dbg('>> END SYNC detected. Total bits: ' + allBits.length + ' (' + Math.floor(allBits.length / 8) + ' bytes)');
                         finishReceive();
                         return;
                     }
-                    // Don't add sync frames to bit buffer
-                    return;
-                }
 
-                // If we had some end-sync frames but it wasn't enough, those were noise
-                if (endN > 0) {
-                    dbg('False end-sync (' + endN + ' frames), continuing...');
-                    endN = 0;
-                }
-
-                // Collect bit samples
-                if (sig === 'ZERO') {
-                    bitBuf.push(0);
-                } else if (sig === 'ONE') {
-                    bitBuf.push(1);
-                }
-                // SILENCE and UNKNOWN during data are ignored (noise)
-
-                // Enough samples for one bit?
-                if (bitBuf.length >= SPB) {
-                    var bit = vote(bitBuf);
+                    var bit = votes.one >= votes.zero ? 1 : 0;
                     allBits.push(bit);
-                    bitBuf = [];
 
-                    // Try to parse header for progress
+                    // Reset sample counters and votes
+                    sampleCounter -= samplesPerBit;
+                    votes = { zero: 0, one: 0, sync: 0, silence: 0 };
+
+                    // Parse header
                     if (!hdr && allBits.length >= 40) tryHdr();
 
                     // Update progress
@@ -895,7 +894,7 @@ function startListen() {
                         el('rrem').textContent = fmtTime(Math.max(0, rem)) + ' left';
                         setRS('on', 'Receiving', Math.floor(allBits.length / 8) + ' / ' + Math.ceil(expBits / 8) + ' bytes');
 
-                        // AUTO-FINISH: If we have received all expected bits, automatically finish
+                        // AUTO-FINISH
                         if (allBits.length >= expBits) {
                             dbg('>> AUTO-FINISH: Received all expected bits (' + expBits + ')');
                             finishReceive();
@@ -907,7 +906,7 @@ function startListen() {
                 }
                 break;
         }
-    }, C.INT);
+    };
 }
 
 function tryHdr() {
@@ -934,8 +933,6 @@ function tryHdr() {
 
 function finishReceive() {
     listening = false;
-    clearInterval(aTimer);
-    aTimer = null;
     cancelAnimationFrame(rAF);
 
     var bytes = bits2b(allBits);
@@ -1017,7 +1014,6 @@ function cleanupAudioCtx() {
 
 function cleanupReceiver() {
     listening = false;
-    if (aTimer) { clearInterval(aTimer); aTimer = null; }
     if (rAF) { cancelAnimationFrame(rAF); rAF = null; }
     cleanupAudioCtx();
     if (micStream) {
@@ -1030,7 +1026,6 @@ function cleanupReceiver() {
 function stopListen() {
     dbg('Listening stopped by user');
     listening = false;
-    if (aTimer) { clearInterval(aTimer); aTimer = null; }
     if (rAF) { cancelAnimationFrame(rAF); rAF = null; }
     cleanupAudioCtx();
     // Don't kill mic stream here - keep it alive for re-listen
