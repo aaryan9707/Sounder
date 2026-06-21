@@ -4,948 +4,835 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acoustic File Transfer</title>
-
+    <title>Sounder</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         * {
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-            background: #f5f5f7;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .app {
-            background: white;
-            padding: 28px;
-            border-radius: 12px;
-            width: 460px;
-            max-width: 100%;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        h2 {
-            margin: 0 0 4px 0;
-            font-size: 19px;
-        }
-
-        .subtitle {
-            color: #6b6b70;
-            font-size: 13px;
-            margin: 0 0 20px 0;
-        }
-
-        .mode-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        button {
-            flex: 1;
-            padding: 11px;
-            border: 1px solid #d8d8dc;
-            background: #fafafa;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-
-        button:hover {
-            background: #eee;
-        }
-
-        button.active {
-            background: #1c1c1e;
-            color: white;
-            border-color: #1c1c1e;
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .panel {
-            display: none;
-            margin-top: 16px;
-            border-top: 1px solid #ececef;
-            padding-top: 16px;
-        }
-
-        .panel.visible {
-            display: block;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-
-        .primary-btn {
-            width: 100%;
-            padding: 12px;
-            background: #1c1c1e;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-
-        .primary-btn:disabled {
-            background: #c7c7cc;
-            cursor: not-allowed;
-        }
-
-        .progress-wrap {
-            height: 6px;
-            background: #ececef;
-            border-radius: 3px;
-            margin-top: 12px;
+            font-family: 'Inter', sans-serif;
+            background: #fff;
+            color: #1a1a1a;
+            height: 100vh;
             overflow: hidden;
         }
 
-        .progress-bar {
+        #app {
+            max-width: 420px;
+            margin: 0 auto;
             height: 100%;
-            width: 0%;
-            background: #1c1c1e;
-            transition: width 0.12s linear;
-        }
-
-        .progress-label {
-            font-size: 11px;
-            color: #8e8e93;
-            margin-top: 4px;
-            text-align: right;
-        }
-
-        #status {
-            margin-top: 14px;
-            font-size: 13px;
-            color: #3a3a3c;
-            min-height: 18px;
-        }
-
-        #status.error {
-            color: #d70015;
-        }
-
-        #status.success {
-            color: #1e8e3e;
-        }
-
-        .meta {
-            font-size: 12px;
-            color: #8e8e93;
-            margin-top: 6px;
-        }
-
-        /* ---- Receiver visuals ---- */
-        .signal-panel {
-            margin-top: 14px;
-            background: #fafafa;
-            border: 1px solid #ececef;
-            border-radius: 8px;
-            padding: 12px;
-        }
-
-        .signal-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 7px;
-        }
-
-        .signal-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .signal-label {
-            width: 78px;
-            font-size: 11px;
-            color: #6b6b70;
-            font-family: "SF Mono", Consolas, monospace;
-            flex-shrink: 0;
-        }
-
-        .signal-track {
-            flex: 1;
-            height: 10px;
-            background: #e8e8ec;
-            border-radius: 5px;
-            overflow: hidden;
             position: relative;
         }
 
-        .signal-fill {
-            height: 100%;
-            width: 0%;
-            background: #aeaeb2;
-            border-radius: 5px;
-            transition: width 0.05s linear, background-color 0.1s linear;
+        /* Screens */
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+            overflow-y: auto;
         }
 
-        .signal-fill.active {
-            background: #30d158;
+        .screen.active {
+            opacity: 1;
+            pointer-events: all;
         }
 
-        .phase-indicator {
+        /* Nav */
+        .nav {
+            padding: 16px 20px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-top: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .nav h2 {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .btn-back {
+            background: none;
+            border: none;
+            color: #007AFF;
+            font: 500 15px/1 'Inter', sans-serif;
+            cursor: pointer;
+            padding: 4px 0;
+            margin-right: 12px;
+        }
+
+        /* Body padding */
+        .body {
+            padding: 20px;
+            flex: 1;
+        }
+
+        /* Home */
+        .home-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px 40px;
+        }
+
+        .home-center h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .home-center p {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 36px;
+        }
+
+        .menu-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px;
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            cursor: pointer;
+            font-family: inherit;
+            text-align: left;
+            margin-bottom: 10px;
+            transition: background 0.15s;
+        }
+
+        .menu-btn:hover {
+            background: #f0f4ff;
+            border-color: #007AFF;
+        }
+
+        .menu-btn .icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .menu-btn .icon.send {
+            background: #e8f0fe;
+            color: #007AFF;
+        }
+
+        .menu-btn .icon.recv {
+            background: #e6f9ed;
+            color: #34C759;
+        }
+
+        .menu-btn .label {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .menu-btn .sub {
             font-size: 12px;
-            color: #6b6b70;
+            color: #888;
+            margin-top: 2px;
         }
 
-        .phase-dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: #c7c7cc;
-            transition: background-color 0.15s;
+        .chevron {
+            margin-left: auto;
+            color: #ccc;
+            font-size: 18px;
         }
 
-        .phase-dot.idle {
-            background: #c7c7cc;
+        .footer-note {
+            text-align: center;
+            font-size: 11px;
+            color: #bbb;
+            padding: 16px 20px 28px;
         }
 
-        .phase-dot.waiting {
-            background: #ff9f0a;
+        /* File picker */
+        .picker {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 32px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.15s;
         }
 
-        .phase-dot.active {
-            background: #30d158;
-            box-shadow: 0 0 6px rgba(48, 209, 88, 0.6);
+        .picker:hover {
+            border-color: #007AFF;
         }
 
-        .phase-dot.error {
-            background: #ff453a;
+        .picker.has-file {
+            border-style: solid;
+            border-color: #007AFF;
+            padding: 16px;
         }
 
-        .packet-view {
-            margin-top: 12px;
-            background: #0a0a0a;
-            border-radius: 6px;
-            padding: 10px;
-            height: 110px;
-            overflow-y: auto;
-            font-family: "SF Mono", Consolas, monospace;
-            font-size: 10.5px;
-            line-height: 1.5;
-            color: #32d74b;
-            white-space: pre-wrap;
-            word-break: break-all;
+        .picker-label {
+            font-size: 14px;
+            font-weight: 500;
         }
 
-        .packet-view .dim {
-            color: #5a5a5a;
-        }
-
-        .packet-view .info {
-            color: #64d2ff;
-        }
-
-        .packet-view .warn {
-            color: #ff9f0a;
-        }
-
-        .packet-view .err {
-            color: #ff453a;
-        }
-
-        .received-summary {
-            margin-top: 10px;
+        .picker-hint {
             font-size: 12px;
-            color: #3a3a3c;
-            background: #f0f9f1;
-            border: 1px solid #cdebd1;
-            border-radius: 6px;
-            padding: 8px 10px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .picker input {
             display: none;
         }
 
-        .received-summary.visible {
+        .file-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+        }
+
+        .file-row .fname {
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-row .fsize {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .file-row .remove {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .file-row .remove:hover {
+            color: #FF3B30;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font: 600 15px/1 'Inter', sans-serif;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: opacity 0.15s;
+        }
+
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .btn.blue {
+            background: #007AFF;
+            color: #fff;
+        }
+
+        .btn.blue:hover:not(:disabled) {
+            opacity: 0.85;
+        }
+
+        .btn.red {
+            background: #FF3B30;
+            color: #fff;
+            margin-top: 10px;
+        }
+
+        .btn.red:hover {
+            opacity: 0.85;
+        }
+
+        /* Status */
+        .status {
+            margin-top: 18px;
+            padding: 14px;
+            background: #fafafa;
+            border-radius: 10px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .status-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .dot.on {
+            background: #007AFF;
+            animation: blink 1.2s infinite;
+        }
+
+        .dot.ok {
+            background: #34C759;
+        }
+
+        .dot.err {
+            background: #FF3B30;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .status-label {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-msg {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        /* Progress */
+        .prog-track {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .prog-fill {
+            height: 100%;
+            width: 0%;
+            background: #007AFF;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .prog-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        /* Canvas */
+        .wave-box {
+            margin-top: 16px;
+        }
+
+        .wave-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 6px;
+        }
+
+        canvas.wave {
+            width: 100%;
+            height: 56px;
             display: block;
+            background: #fafafa;
+            border-radius: 8px;
+            border: 1px solid #f0f0f0;
+        }
+
+        /* Receiver listening */
+        .listen-area {
+            text-align: center;
+            padding: 40px 0 20px;
+        }
+
+        .mic-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .listen-title {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .listen-sub {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+            line-height: 1.5;
+        }
+
+        /* Received file */
+        .recv-card {
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #34C759;
+            background: #f6fef9;
+        }
+
+        .recv-card .hdr {
+            font-size: 13px;
+            font-weight: 600;
+            color: #34C759;
+            margin-bottom: 6px;
+        }
+
+        .recv-card .fn {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .recv-card .fm {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        /* Hint */
+        .hint {
+            margin-top: 16px;
+            padding: 12px;
+            background: #fffbe6;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #8a7000;
+            line-height: 1.5;
+        }
+
+        .hint.blue-hint {
+            background: #f0f4ff;
+            color: #555;
+        }
+
+        .hide {
+            display: none !important;
         }
     </style>
 </head>
 
 <body>
+    <div id="app">
 
-    <div class="app">
-        <h2>Acoustic Transfer</h2>
-        <p class="subtitle">Sends small files between devices using sound, no network needed.</p>
+        <!-- HOME -->
+        <div id="s-home" class="screen active">
+            <div class="home-center">
+                <h1>Sounder</h1>
+                <p>File transfer over sound</p>
 
-        <div class="mode-row">
-            <button id="btnSend" onclick="setMode('send')">Sender</button>
-            <button id="btnRecv" onclick="setMode('recv')">Receiver</button>
+                <button class="menu-btn" onclick="go('sender')">
+                    <div class="icon send">&#8593;</div>
+                    <div>
+                        <div class="label">Initialize Sender</div>
+                        <div class="sub">Transmit a file via sound</div>
+                    </div>
+                    <span class="chevron">&#8250;</span>
+                </button>
+                <button class="menu-btn" onclick="go('receiver')">
+                    <div class="icon recv">&#8595;</div>
+                    <div>
+                        <div class="label">Initialize Receiver</div>
+                        <div class="sub">Receive a file via microphone</div>
+                    </div>
+                    <span class="chevron">&#8250;</span>
+                </button>
+            </div>
+            <div class="footer-note">No Wi-Fi, Bluetooth, or internet needed.</div>
         </div>
 
-        <div id="sendUI" class="panel">
-            <input type="file" id="file">
-            <div class="meta" id="fileMeta"></div>
-            <button class="primary-btn" id="sendBtn" onclick="send()">Send File</button>
-            <div class="progress-wrap">
-                <div class="progress-bar" id="sendProgress"></div>
+        <!-- SENDER -->
+        <div id="s-sender" class="screen">
+            <div class="nav">
+                <button class="btn-back" onclick="home('sender')">&#8249; Back</button>
+                <h2>Sender</h2>
             </div>
-            <div class="progress-label" id="sendProgressLabel">0%</div>
+            <div class="body">
+                <div class="picker" id="picker" onclick="$('finput').click()">
+                    <div id="picker-empty">
+                        <div class="picker-label">Tap to select a file</div>
+                        <div class="picker-hint">Text files recommended &middot; Max 2 KB</div>
+                    </div>
+                    <div id="picker-file" class="hide">
+                        <div class="file-row">
+                            <div style="min-width:0;flex:1">
+                                <div class="fname" id="fn"></div>
+                                <div class="fsize" id="fs"></div>
+                            </div>
+                            <button class="remove" onclick="event.stopPropagation();rmFile()">&#215;</button>
+                        </div>
+                    </div>
+                    <input type="file" id="finput" onchange="pickFile(event)">
+                </div>
+
+                <button class="btn blue" id="btnSend" onclick="send()" disabled>Transmit</button>
+                <div id="estTime" class="hide" style="text-align:center;font-size:12px;color:#999;margin-top:6px;">
+                </div>
+                <button class="btn red hide" id="btnCancelSend" onclick="cancelSend()">Cancel</button>
+
+                <div id="sendSt" class="status hide">
+                    <div class="status-top">
+                        <div class="dot" id="sdot"></div><span class="status-label" id="slbl"></span>
+                    </div>
+                    <div class="status-msg" id="smsg"></div>
+                    <div id="sprogWrap" class="hide">
+                        <div class="prog-track">
+                            <div class="prog-fill" id="sfill"></div>
+                        </div>
+                        <div class="prog-text"><span id="spct"></span><span id="srem"></span></div>
+                    </div>
+                </div>
+
+                <div id="sendWave" class="wave-box hide">
+                    <div class="wave-label">Signal</div>
+                    <canvas class="wave" id="swc" width="800" height="112"></canvas>
+                </div>
+
+                <div class="hint">Volume should be at maximum. Keep devices within 1 meter.</div>
+            </div>
         </div>
 
-        <div id="recvUI" class="panel">
-            <button class="primary-btn" id="recvBtn" onclick="startListening()">Start Listening</button>
-            <div class="progress-wrap">
-                <div class="progress-bar" id="recvProgress"></div>
+        <!-- RECEIVER -->
+        <div id="s-receiver" class="screen">
+            <div class="nav">
+                <button class="btn-back" onclick="home('receiver')">&#8249; Back</button>
+                <h2>Receiver</h2>
             </div>
-            <div class="progress-label" id="recvProgressLabel">0%</div>
+            <div class="body">
+                <div class="listen-area">
+                    <div class="mic-icon">&#127908;</div>
+                    <div class="listen-title" id="rlt">Initializing...</div>
+                    <div class="listen-sub" id="rlh">Requesting microphone access</div>
+                </div>
 
-            <div class="phase-indicator">
-                <div class="phase-dot idle" id="phaseDot"></div>
-                <span id="phaseText">Idle</span>
+                <button class="btn blue hide" id="btnListen" onclick="listen()">Start Listening</button>
+                <button class="btn red hide" id="btnStop" onclick="stopListen()">Stop</button>
+
+                <div id="recvSt" class="status hide">
+                    <div class="status-top">
+                        <div class="dot" id="rdot"></div><span class="status-label" id="rlbl"></span>
+                    </div>
+                    <div class="status-msg" id="rmsg"></div>
+                    <div id="rprogWrap" class="hide">
+                        <div class="prog-track">
+                            <div class="prog-fill" id="rfill"></div>
+                        </div>
+                        <div class="prog-text"><span id="rpct"></span><span id="rrem"></span></div>
+                    </div>
+                </div>
+
+                <div id="recvCard" class="recv-card hide">
+                    <div class="hdr">File Received</div>
+                    <div class="fn" id="rfn"></div>
+                    <div class="fm" id="rfm"></div>
+                </div>
+
+                <div id="recvWave" class="wave-box hide">
+                    <div class="wave-label">Input</div>
+                    <canvas class="wave" id="rwc" width="800" height="112"></canvas>
+                </div>
+
+                <div class="hint blue-hint">Keep this device near the sender. Minimize background noise.</div>
             </div>
-
-            <div class="signal-panel">
-                <div class="signal-row">
-                    <div class="signal-label">CAL 1700Hz</div>
-                    <div class="signal-track">
-                        <div class="signal-fill" id="sig-1700"></div>
-                    </div>
-                </div>
-                <div class="signal-row">
-                    <div class="signal-label">SYNC 3200Hz</div>
-                    <div class="signal-track">
-                        <div class="signal-fill" id="sig-3200"></div>
-                    </div>
-                </div>
-                <div class="signal-row">
-                    <div class="signal-label">BIT0 1200Hz</div>
-                    <div class="signal-track">
-                        <div class="signal-fill" id="sig-1200"></div>
-                    </div>
-                </div>
-                <div class="signal-row">
-                    <div class="signal-label">BIT1 2200Hz</div>
-                    <div class="signal-track">
-                        <div class="signal-fill" id="sig-2200"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="packet-view" id="packetView">Waiting to start...</div>
-            <div class="received-summary" id="receivedSummary"></div>
         </div>
-
-        <p id="status">Choose Sender or Receiver to begin.</p>
     </div>
 
     <script>
-        /* ===================== CONFIG ===================== */
-        // Wide separation between tones reduces confusion from harmonics/noise.
-        const FREQ0 = 1200;          // bit 0
-        const FREQ1 = 2200;          // bit 1
-        const SYNC_FREQ = 3200;      // start-of-frame marker
-        const CALIBRATE_FREQ = 1700; // brief calibration tone before sync
+        // --- Helpers ---
+        const $ = id => document.getElementById(id);
+        const show = (id) => $(id).classList.remove('hide');
+        const hide = (id) => $(id).classList.add('hide');
+        function fmtSize(b) { return b < 1024 ? b + ' B' : (b / 1024).toFixed(1) + ' KB'; }
+        function fmtTime(s) { if (s < 60) return Math.ceil(s) + 's'; return Math.floor(s / 60) + 'm ' + Math.ceil(s % 60) + 's'; }
 
-        const SYMBOL_MS = 60;        // duration of each tone symbol
-        const SYNC_MS = 500;         // duration of the sync tone
-        const CALIBRATE_MS = 300;    // duration of calibration tone
+        // --- Config ---
+        const C = { SR: 44100, FFT: 1024, BIT: 0.03, F0: 4000, F1: 8000, FS: 2000, SYNC: 0.6, GAP: 0.2, INT: 8, THRESH: 120, TOL: 600, SMIN: 30, GMIN: 8, MAX: 2048, VOL: 0.8 };
+        const SPB = Math.max(2, Math.round(C.BIT * 1000 / C.INT));
 
-        const GOERTZEL_TARGETS = [FREQ0, FREQ1, SYNC_FREQ, CALIBRATE_FREQ];
-        const SIGNAL_BAR_IDS = { 1200: 'sig-1200', 2200: 'sig-2200', 3200: 'sig-3200', 1700: 'sig-1700' };
+        // --- CRC16 ---
+        function crc16(d) { let c = 0xFFFF; for (let i = 0; i < d.length; i++) { c ^= d[i] << 8; for (let j = 0; j < 8; j++)c = (c & 0x8000) ? ((c << 1) ^ 0x1021) : (c << 1); c &= 0xFFFF; } return c; }
+        function b2bits(bytes) { const r = []; for (const b of bytes) for (let i = 7; i >= 0; i--)r.push((b >> i) & 1); return r; }
+        function bits2b(bits) { const r = []; for (let i = 0; i + 7 < bits.length; i += 8) { let v = 0; for (let j = 0; j < 8; j++)v = (v << 1) | bits[i + j]; r.push(v); } return new Uint8Array(r); }
 
-        let audioCtx;
-        let currentMode = null;
-
-        /* ===================== UI ===================== */
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('sendUI').classList.toggle('visible', mode === 'send');
-            document.getElementById('recvUI').classList.toggle('visible', mode === 'recv');
-            document.getElementById('btnSend').classList.toggle('active', mode === 'send');
-            document.getElementById('btnRecv').classList.toggle('active', mode === 'recv');
-            setStatus(mode === 'send' ? 'Pick a file and press Send.' : 'Press Start Listening, then allow microphone access.', '');
+        function buildPkt(name, data) {
+            const nb = new TextEncoder().encode(name), nl = Math.min(nb.length, 255);
+            const buf = new Uint8Array(1 + nl + 4 + data.length);
+            let o = 0; buf[o++] = nl;
+            for (let i = 0; i < nl; i++)buf[o++] = nb[i];
+            buf[o++] = (data.length >> 24) & 0xFF; buf[o++] = (data.length >> 16) & 0xFF;
+            buf[o++] = (data.length >> 8) & 0xFF; buf[o++] = data.length & 0xFF;
+            for (let i = 0; i < data.length; i++)buf[o++] = data[i];
+            const cv = crc16(buf), pkt = new Uint8Array(buf.length + 2);
+            pkt.set(buf); pkt[buf.length] = (cv >> 8) & 0xFF; pkt[buf.length + 1] = cv & 0xFF;
+            return pkt;
+        }
+        function parsePkt(bytes) {
+            const dec = new TextDecoder(); let o = 0;
+            if (bytes.length < 6) return null;
+            const nl = bytes[o++]; if (o + nl + 4 + 2 > bytes.length) return null;
+            const name = dec.decode(bytes.slice(o, o + nl)); o += nl;
+            const dl = (bytes[o] << 24) | (bytes[o + 1] << 16) | (bytes[o + 2] << 8) | bytes[o + 3]; o += 4;
+            if (o + dl + 2 > bytes.length) return null;
+            const data = bytes.slice(o, o + dl); o += dl;
+            const rc = (bytes[o] << 8) | bytes[o + 1], cc = crc16(bytes.slice(0, o));
+            return { name, data, ok: rc === cc };
         }
 
-        function setStatus(msg, cls) {
-            const el = document.getElementById('status');
-            el.innerText = msg;
-            el.className = cls || '';
-        }
+        // --- Screens ---
+        let cur = 'home';
+        function go(s) { $('s-' + cur).classList.remove('active'); $('s-' + s).classList.add('active'); cur = s; if (s === 'receiver') initRecv(); }
+        function home(from) { if (from === 'sender') cancelSend(); if (from === 'receiver') stopListen(); $('s-' + cur).classList.remove('active'); $('s-home').classList.add('active'); cur = 'home'; resetSendUI(); resetRecvUI(); }
 
-        document.getElementById('file').addEventListener('change', function () {
-            const f = this.files[0];
-            const metaEl = document.getElementById('fileMeta');
-            if (!f) { metaEl.innerText = ''; return; }
-            if (f.size > 50000) {
-                metaEl.innerText = f.name + ' \u2014 ' + (f.size / 1024).toFixed(1) + ' KB (large: transfer will be slow)';
+        // === SENDER ===
+        let selFile = null, selData = null, sCtx = null, sOsc = null, sending = false, sAF = null, sT0 = 0, sDur = 0;
+
+        function pickFile(e) {
+            const f = e.target.files[0]; if (!f) return;
+            if (f.size > C.MAX) { alert('File too large (max ' + fmtSize(C.MAX) + ')'); e.target.value = ''; return; }
+            selFile = f; const r = new FileReader();
+            r.onload = ev => { selData = new Uint8Array(ev.target.result); updPicker(); };
+            r.readAsArrayBuffer(f);
+        }
+        function updPicker() {
+            if (selFile) {
+                $('picker').classList.add('has-file'); hide('picker-empty'); show('picker-file');
+                $('fn').textContent = selFile.name; $('fs').textContent = fmtSize(selFile.size);
+                $('btnSend').disabled = false;
+                const pkt = buildPkt(selFile.name, selData), tb = pkt.length * 8;
+                sDur = C.SYNC + C.GAP + tb * C.BIT + C.SYNC;
+                $('estTime').textContent = '~' + fmtTime(sDur); show('estTime');
             } else {
-                metaEl.innerText = f.name + ' \u2014 ' + (f.size / 1024).toFixed(1) + ' KB';
+                $('picker').classList.remove('has-file'); show('picker-empty'); hide('picker-file');
+                $('btnSend').disabled = true; hide('estTime');
             }
-        });
-
-        /* ===================== CRC16 (CCITT) ===================== */
-        function crc16(str) {
-            let crc = 0xFFFF;
-            for (let i = 0; i < str.length; i++) {
-                crc ^= str.charCodeAt(i) << 8;
-                for (let b = 0; b < 8; b++) {
-                    crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
-                    crc &= 0xFFFF;
-                }
-            }
-            return crc;
         }
+        function rmFile() { selFile = null; selData = null; $('finput').value = ''; updPicker(); }
+        function resetSendUI() { hide('sendSt'); hide('sendWave'); hide('sprogWrap'); show('btnSend'); hide('btnCancelSend'); if (selFile) show('estTime'); }
 
-        /* ===================== BYTE <-> BITS ===================== */
-        function bytesToBits(bytes) {
-            let bits = '';
-            for (let i = 0; i < bytes.length; i++) {
-                bits += bytes.charCodeAt(i).toString(2).padStart(8, '0');
-            }
-            return bits;
-        }
-
-        /* ===================== SENDER ===================== */
         async function send() {
-            const fileInput = document.getElementById('file');
-            const f = fileInput.files[0];
-            if (!f) { setStatus('Select a file first.', 'error'); return; }
+            if (!selFile || !selData || sending) return; sending = true;
+            const pkt = buildPkt(selFile.name, selData), bits = b2bits(pkt);
+            const dataDur = bits.length * C.BIT; sDur = C.SYNC + C.GAP + dataDur + C.SYNC;
 
-            document.getElementById('sendBtn').disabled = true;
-            setStatus('Reading file...', '');
+            hide('btnSend'); show('btnCancelSend'); hide('estTime'); show('sendSt'); show('sendWave'); show('sprogWrap');
+            setSS('on', 'Transmitting', 'Sending sync signal...');
 
-            const reader = new FileReader();
+            sCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: C.SR });
+            sOsc = sCtx.createOscillator(); const gn = sCtx.createGain(), an = sCtx.createAnalyser();
+            an.fftSize = 256; sOsc.type = 'sine';
+            sOsc.connect(gn); gn.connect(an); gn.connect(sCtx.destination);
 
-            reader.onload = async (e) => {
-                try {
-                    const bytes = new Uint8Array(e.target.result);
-                    let bin = '';
-                    for (let i = 0; i < bytes.length; i++) {
-                        bin += String.fromCharCode(bytes[i]);
-                    }
-                    const base64 = btoa(bin);
+            let t = sCtx.currentTime + 0.05; sT0 = t;
+            sOsc.frequency.setValueAtTime(C.FS, t); gn.gain.setValueAtTime(C.VOL, t); t += C.SYNC;
+            gn.gain.setValueAtTime(0, t); t += C.GAP;
+            for (const b of bits) { sOsc.frequency.setValueAtTime(b ? C.F1 : C.F0, t); gn.gain.setValueAtTime(C.VOL, t); t += C.BIT; }
+            sOsc.frequency.setValueAtTime(C.FS, t); gn.gain.setValueAtTime(C.VOL, t); t += C.SYNC;
+            gn.gain.setValueAtTime(0, t); sOsc.start(sT0); sOsc.stop(t + 0.05);
 
-                    const payloadObj = { n: f.name, t: f.type || 'application/octet-stream', d: base64 };
-                    const payloadStr = JSON.stringify(payloadObj);
-                    const checksum = crc16(payloadStr);
-
-                    // Frame: [8-char ASCII length][payload][5-char ASCII checksum]
-                    const lenStr = String(payloadStr.length).padStart(8, '0');
-                    const crcStr = String(checksum).padStart(5, '0');
-                    const fullMessage = lenStr + payloadStr + crcStr;
-
-                    const bits = bytesToBits(fullMessage);
-
-                    setStatus('Transmitting... keep speaker near the receiving microphone.', '');
-                    await transmit(bits);
-                    setStatus('Sent.', 'success');
-                } catch (err) {
-                    setStatus('Failed to prepare file: ' + err.message, 'error');
-                } finally {
-                    document.getElementById('sendBtn').disabled = false;
-                }
+            const cv = document.getElementById('swc'), cx = cv.getContext('2d'), td = new Uint8Array(an.frequencyBinCount);
+            function draw() {
+                if (!sending) return; sAF = requestAnimationFrame(draw);
+                an.getByteTimeDomainData(td);
+                cx.fillStyle = '#fafafa'; cx.fillRect(0, 0, cv.width, cv.height);
+                cx.strokeStyle = '#007AFF'; cx.lineWidth = 2; cx.beginPath();
+                const sw = cv.width / td.length; let x = 0;
+                for (let i = 0; i < td.length; i++) { const y = td[i] / 128 * cv.height / 2; i ? cx.lineTo(x, y) : cx.moveTo(x, y); x += sw; }
+                cx.stroke();
+                const el = sCtx.currentTime - sT0, p = Math.min(100, el / sDur * 100);
+                $('sfill').style.width = p + '%'; $('spct').textContent = Math.round(p) + '%';
+                $('srem').textContent = fmtTime(Math.max(0, sDur - el)) + ' left';
+                if (el < C.SYNC) setSS('on', 'Transmitting', 'Sending sync...');
+                else if (el < C.SYNC + C.GAP) setSS('on', 'Transmitting', 'Preparing...');
+                else if (el < sDur - C.SYNC) { const bs = Math.floor((el - C.SYNC - C.GAP) / C.BIT / 8); setSS('on', 'Transmitting', fmtSize(Math.min(bs, pkt.length)) + ' / ' + fmtSize(pkt.length)); }
+                else setSS('on', 'Transmitting', 'End signal...');
+            }
+            draw();
+            sOsc.onended = () => {
+                if (!sending) return; sending = false; cancelAnimationFrame(sAF);
+                setSS('ok', 'Done', 'Sent ' + fmtSize(selFile.size) + ' in ' + fmtTime(sDur));
+                $('sfill').style.width = '100%'; $('spct').textContent = '100%'; $('srem').textContent = 'Done';
+                hide('btnCancelSend'); show('btnSend'); $('btnSend').disabled = false;
+                if (sCtx) { sCtx.close(); sCtx = null; }
             };
+        }
+        function cancelSend() {
+            if (!sending) return; sending = false; cancelAnimationFrame(sAF);
+            try { sOsc.stop(); } catch (e) { } if (sCtx) { sCtx.close(); sCtx = null; }
+            setSS('err', 'Cancelled', 'Stopped by user.'); hide('btnCancelSend'); show('btnSend'); $('btnSend').disabled = false;
+        }
+        function setSS(dot, lbl, msg) { $('sdot').className = 'dot ' + dot; $('slbl').textContent = lbl; $('smsg').textContent = msg; }
 
-            reader.onerror = () => {
-                setStatus('Could not read the file.', 'error');
-                document.getElementById('sendBtn').disabled = false;
-            };
+        // === RECEIVER ===
+        let rCtx = null, mic = null, anNode = null, listening = false, rAF = null, aTimer = null;
+        let rxSt = 'IDLE', syncN = 0, silN = 0, endN = 0, bitBuf = [], allBits = [], expBits = -1, hdr = null, rxT0 = 0;
 
-            reader.readAsArrayBuffer(f);
+        function resetRecvUI() {
+            hide('recvSt'); hide('recvWave'); hide('rprogWrap'); hide('recvCard'); hide('btnListen'); hide('btnStop');
+            $('rlt').textContent = 'Initializing...'; $('rlh').textContent = 'Requesting microphone access';
         }
 
-        function setSendProgress(pct) {
-            document.getElementById('sendProgress').style.width = pct + '%';
-            document.getElementById('sendProgressLabel').innerText = Math.round(pct) + '%';
-        }
-
-        function transmit(bits) {
-            return new Promise((resolve) => {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                gain.gain.value = 0.9;
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                const startDelay = 0.1;
-                const calibrateStart = audioCtx.currentTime + startDelay;
-                const syncStart = calibrateStart + (CALIBRATE_MS / 1000);
-                const dataStart = syncStart + (SYNC_MS / 1000);
-                const totalBits = bits.length;
-                const dataEnd = dataStart + totalBits * (SYMBOL_MS / 1000);
-
-                // Calibration tone: lets receiver confirm audio path / set noise floor
-                osc.frequency.setValueAtTime(CALIBRATE_FREQ, calibrateStart);
-
-                // Sync marker: unambiguous start-of-frame
-                osc.frequency.setValueAtTime(SYNC_FREQ, syncStart);
-
-                // Data symbols
-                let t = dataStart;
-                for (let i = 0; i < totalBits; i++) {
-                    const b = bits[i];
-                    osc.frequency.setValueAtTime(b === '1' ? FREQ1 : FREQ0, t);
-                    t += SYMBOL_MS / 1000;
-                }
-
-                osc.start(audioCtx.currentTime);
-                osc.stop(dataEnd + 0.05);
-
-                setSendProgress(0);
-
-                // Progress is driven off real playback time (audioCtx.currentTime),
-                // not off the synchronous scheduling loop above, so it now actually
-                // animates instead of jumping straight to 100%.
-                let rafId;
-                function tick() {
-                    const now = audioCtx.currentTime;
-                    if (now < calibrateStart) {
-                        setSendProgress(0);
-                    } else if (now < dataStart) {
-                        setSendProgress(2);
-                    } else if (now < dataEnd) {
-                        const pct = ((now - dataStart) / (dataEnd - dataStart)) * 100;
-                        setSendProgress(Math.min(99, pct));
-                    } else {
-                        setSendProgress(100);
-                        cancelAnimationFrame(rafId);
-                        return;
-                    }
-                    rafId = requestAnimationFrame(tick);
-                }
-                tick();
-
-                osc.onended = () => {
-                    cancelAnimationFrame(rafId);
-                    setSendProgress(100);
-                    setTimeout(() => { setSendProgress(0); }, 600);
-                    resolve();
-                };
-            });
-        }
-
-        /* ===================== GOERTZEL DETECTOR ===================== */
-        // Goertzel is far more reliable than "find loudest FFT bin" for detecting
-        // a small set of known target frequencies in a noisy signal.
-        function goertzelMagnitude(samples, sampleRate, targetFreq) {
-            const N = samples.length;
-            const k = Math.round((N * targetFreq) / sampleRate);
-            const w = (2 * Math.PI / N) * k;
-            const cosine = Math.cos(w);
-            const coeff = 2 * cosine;
-
-            let q0 = 0, q1 = 0, q2 = 0;
-            for (let i = 0; i < N; i++) {
-                q0 = coeff * q1 - q2 + samples[i];
-                q2 = q1;
-                q1 = q0;
-            }
-            const real = q1 - q2 * cosine;
-            const imag = q2 * Math.sin(w);
-            return Math.sqrt(real * real + imag * imag);
-        }
-
-        function classifyWindow(samples, sampleRate) {
-            const mags = {};
-            for (const f of GOERTZEL_TARGETS) {
-                mags[f] = goertzelMagnitude(samples, sampleRate, f);
-            }
-            let bestFreq = null, bestMag = -1;
-            for (const f of GOERTZEL_TARGETS) {
-                if (mags[f] > bestMag) {
-                    bestMag = mags[f];
-                    bestFreq = f;
-                }
-            }
-            return { freq: bestFreq, mag: bestMag, all: mags };
-        }
-
-        /* ===================== RECEIVER ===================== */
-        let recvState = null;
-
-        function setPhase(phase, text) {
-            const dot = document.getElementById('phaseDot');
-            dot.className = 'phase-dot ' + phase;
-            document.getElementById('phaseText').innerText = text;
-        }
-
-        function packetLog(html) {
-            const el = document.getElementById('packetView');
-            el.innerHTML += html + '\n';
-            el.scrollTop = el.scrollHeight;
-        }
-
-        function packetLogReset(text) {
-            document.getElementById('packetView').innerHTML = text;
-        }
-
-        async function startListening() {
-            const btn = document.getElementById('recvBtn');
-            btn.disabled = true;
-            packetLogReset('Requesting microphone access...');
-            document.getElementById('receivedSummary').classList.remove('visible');
-            setPhase('waiting', 'Requesting microphone...');
-            setStatus('Allow microphone access in the Chrome prompt.', '');
-
+        async function initRecv() {
+            resetRecvUI();
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: false,
-                        noiseSuppression: false,
-                        autoGainControl: false
-                    }
-                });
+                mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+                $('rlt').textContent = 'Microphone Ready'; $('rlh').textContent = 'Tap below to start listening'; show('btnListen');
+            } catch (e) { $('rlt').textContent = 'Microphone Denied'; $('rlh').textContent = 'Allow mic access and try again'; }
+        }
 
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                // Chrome suspends AudioContext by default — must resume
-                if (audioCtx.state === 'suspended') {
-                    await audioCtx.resume();
-                }
+        function listen() {
+            if (!mic || listening) return; listening = true;
+            rxSt = 'IDLE'; syncN = 0; silN = 0; endN = 0; bitBuf = []; allBits = []; expBits = -1; hdr = null;
+            hide('btnListen'); show('btnStop'); show('recvSt'); show('recvWave'); hide('recvCard');
+            $('rlt').textContent = 'Listening...'; $('rlh').textContent = 'Waiting for sender';
+            setRS('on', 'Listening', 'Waiting for sync signal...');
 
-                const mic = audioCtx.createMediaStreamSource(stream);
-                const sampleRate = audioCtx.sampleRate;
-                const symbolSamples = Math.round(sampleRate * (SYMBOL_MS / 1000));
+            rCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: C.SR });
+            const src = rCtx.createMediaStreamSource(mic);
+            anNode = rCtx.createAnalyser(); anNode.fftSize = C.FFT; anNode.smoothingTimeConstant = 0.3;
+            src.connect(anNode);
 
-                // Use ScriptProcessorNode — it processes EVERY audio sample
-                // unlike AnalyserNode+rAF which skips/duplicates data.
-                const bufSize = 4096;
-                const processor = audioCtx.createScriptProcessor(bufSize, 1, 1);
+            const fd = new Uint8Array(anNode.frequencyBinCount), td = new Uint8Array(anNode.fftSize);
+            const bw = C.SR / C.FFT;
+            const cv = document.getElementById('rwc'), cx = cv.getContext('2d');
 
-                // Accumulator for building symbol-width analysis windows
-                let sampleBuf = [];
+            function drawR() {
+                if (!listening) return; rAF = requestAnimationFrame(drawR);
+                anNode.getByteTimeDomainData(td);
+                cx.fillStyle = '#fafafa'; cx.fillRect(0, 0, cv.width, cv.height);
+                cx.strokeStyle = rxSt === 'RECEIVING' ? '#34C759' : '#007AFF'; cx.lineWidth = 2; cx.beginPath();
+                const sw = cv.width / td.length; let x = 0;
+                for (let i = 0; i < td.length; i++) { const y = td[i] / 128 * cv.height / 2; i ? cx.lineTo(x, y) : cx.moveTo(x, y); x += sw; }
+                cx.stroke();
+            } drawR();
 
-                recvState = {
-                    phase: 'idle',        // idle -> calibrated -> synced -> reading
-                    bits: '',
-                    stream: stream,
-                    processor: processor,
-                    expectedTotalBits: null,
-                    headerShown: false,
-                    // Counters for requiring consecutive tone detections
-                    calHits: 0,
-                    syncHits: 0,
-                    silentWindows: 0
-                };
+            function energy(cf, bw2) {
+                const s = Math.max(0, Math.floor((cf - bw2 / 2) / bw)), e = Math.min(fd.length - 1, Math.ceil((cf + bw2 / 2) / bw));
+                let t = 0, n = 0; for (let i = s; i <= e; i++) { t += fd[i]; n++; } return n ? t / n : 0;
+            }
 
-                packetLogReset('Listening for calibration tone...');
-                setPhase('waiting', 'Listening for calibration tone');
-                setStatus('Listening. Play the file from the sender device now.', '');
-                setRecvProgress(0);
+            function classify() {
+                anNode.getByteFrequencyData(fd);
+                const es = energy(C.FS, C.TOL), e0 = energy(C.F0, C.TOL), e1 = energy(C.F1, C.TOL), mx = Math.max(es, e0, e1);
+                if (mx < C.THRESH) return 'S';
+                if (es === mx && es > e0 * 1.3 && es > e1 * 1.3) return 'Y';
+                if (e0 === mx && e0 > es * 1.2 && e0 > e1 * 1.2) return '0';
+                if (e1 === mx && e1 > es * 1.2 && e1 > e0 * 1.2) return '1';
+                return '?';
+            }
 
-                let lastBarUpdate = 0;
+            function vote(a) { let z = 0, o = 0; for (const v of a) v ? o++ : z++; return o > z ? 1 : 0; }
 
-                processor.onaudioprocess = (e) => {
-                    if (!recvState) return;
-                    const st = recvState;
-
-                    const input = e.inputBuffer.getChannelData(0);
-                    // Silence the output to prevent feedback
-                    const output = e.outputBuffer.getChannelData(0);
-                    for (let j = 0; j < output.length; j++) output[j] = 0;
-
-                    // Accumulate samples
-                    for (let j = 0; j < input.length; j++) {
-                        sampleBuf.push(input[j]);
-                    }
-
-                    // Process each complete symbol-width window
-                    while (sampleBuf.length >= symbolSamples) {
-                        const win = new Float32Array(sampleBuf.splice(0, symbolSamples));
-
-                        // Goertzel on all target frequencies
-                        const mags = {};
-                        for (const f of GOERTZEL_TARGETS) {
-                            mags[f] = goertzelMagnitude(win, sampleRate, f);
-                        }
-                        let bestFreq = null, bestMag = -1;
-                        for (const f of GOERTZEL_TARGETS) {
-                            if (mags[f] > bestMag) {
-                                bestMag = mags[f];
-                                bestFreq = f;
+            aTimer = setInterval(() => {
+                if (!listening) return; const s = classify();
+                switch (rxSt) {
+                    case 'IDLE':
+                        if (s === 'Y') { syncN++; if (syncN >= C.SMIN) { rxSt = 'SYNC'; setRS('on', 'Sync Detected', 'Preparing...'); } }
+                        else syncN = Math.max(0, syncN - 1); break;
+                    case 'SYNC':
+                        if (s === 'S' || s === '?') {
+                            silN++; if (silN >= C.GMIN) {
+                                rxSt = 'RECEIVING'; rxT0 = Date.now(); bitBuf = []; allBits = []; expBits = -1; hdr = null; endN = 0;
+                                setRS('on', 'Receiving', 'Decoding...'); show('rprogWrap');
                             }
                         }
-                        const energy = bestMag / symbolSamples;
-
-                        // Update signal bars (throttled to ~15fps for UI)
-                        const now = performance.now();
-                        if (now - lastBarUpdate > 65) {
-                            lastBarUpdate = now;
-                            updateSignalBars(mags, symbolSamples, bestFreq, energy);
-                        }
-
-                        // --- State machine ---
-                        const isSilent = energy < MIN_ENERGY;
-
-                        if (st.phase === 'idle') {
-                            if (!isSilent && bestFreq === CALIBRATE_FREQ) {
-                                st.calHits++;
-                                if (st.calHits >= 2) {
-                                    st.phase = 'calibrated';
-                                    st.syncHits = 0;
-                                    setPhase('waiting', 'Calibration detected');
-                                    packetLogReset('<span class="info">[CAL]</span> Calibration tone detected. Waiting for sync...');
-                                }
-                            } else {
-                                st.calHits = 0;
-                            }
-                        }
-                        else if (st.phase === 'calibrated') {
-                            if (!isSilent && bestFreq === SYNC_FREQ) {
-                                st.syncHits++;
-                                if (st.syncHits >= 3) {
-                                    st.phase = 'reading';
-                                    st.bits = '';
-                                    st.expectedTotalBits = null;
-                                    st.headerShown = false;
-                                    st.silentWindows = 0;
-                                    liveByteBuffer = [];
-                                    setPhase('active', 'Sync detected, receiving');
-                                    packetLog('<span class="info">[SYNC]</span> Frame start. Receiving data...');
-                                }
-                            } else if (!isSilent && bestFreq === CALIBRATE_FREQ) {
-                                // still calibrating, fine
-                            } else {
-                                st.syncHits = 0;
-                            }
-                        }
-                        else if (st.phase === 'reading') {
-                            if (isSilent) {
-                                st.silentWindows++;
-                                // After ~2s of silence, try to decode what we have
-                                if (st.silentWindows > 30 && st.bits.length > 0) {
-                                    packetLog('<span class="warn">[TIMEOUT]</span> Silence. Attempting decode...');
-                                    attemptDecode();
-                                }
-                            } else if (bestFreq === FREQ0 || bestFreq === FREQ1) {
-                                st.silentWindows = 0;
-                                st.bits += (bestFreq === FREQ1 ? '1' : '0');
-                                onBitsUpdated();
-                            } else {
-                                // Ignore cal/sync tones during data (harmonics)
-                                st.silentWindows = 0;
-                            }
-                        }
-                    }
-                };
-
-                mic.connect(processor);
-                processor.connect(audioCtx.destination);
-
-            } catch (err) {
-                let msg = 'Microphone access failed: ' + err.message;
-                if (err.name === 'NotAllowedError') {
-                    msg = 'Microphone permission was denied. Click the lock icon in the address bar and allow microphone access, then try again.';
-                } else if (err.name === 'NotFoundError') {
-                    msg = 'No microphone was found on this device.';
+                        else if (s === 'Y') silN = 0; else silN = 0; break;
+                    case 'RECEIVING':
+                        if (s === 'Y') { endN++; if (endN >= C.SMIN) { if (bitBuf.length >= SPB / 2) { allBits.push(vote(bitBuf)); } finish(); return; } return; }
+                        endN = 0;
+                        if (s === '0') bitBuf.push(0); else if (s === '1') bitBuf.push(1);
+                        if (bitBuf.length >= SPB) {
+                            allBits.push(vote(bitBuf)); bitBuf = [];
+                            if (!hdr && allBits.length >= 40) tryHdr();
+                            if (expBits > 0) {
+                                const p = Math.min(100, allBits.length / expBits * 100), el = (Date.now() - rxT0) / 1000,
+                                rate = allBits.length / el, rem = rate > 0 ? (expBits - allBits.length) / rate : 0;
+                                $('rfill').style.width = p + '%'; $('rpct').textContent = Math.round(p) + '%'; $('rrem').textContent = fmtTime(Math.max(0, rem)) + ' left';
+                                setRS('on', 'Receiving', Math.floor(allBits.length / 8) + ' / ' + Math.ceil(expBits / 8) + ' bytes');
+                            } else setRS('on', 'Receiving', Math.floor(allBits.length / 8) + ' bytes');
+                        } break;
                 }
-                setStatus(msg, 'error');
-                setPhase('error', 'Microphone error');
-                btn.disabled = false;
-            }
+            }, C.INT);
         }
 
-        const MIN_ENERGY = 0.015; // ignore near-silence / background noise
-
-        function updateSignalBars(mags, windowSize, dominantFreq, dominantEnergy) {
-            for (const freqKey in SIGNAL_BAR_IDS) {
-                const freq = Number(freqKey);
-                const mag = mags[freq] || 0;
-                const energy = mag / windowSize;
-                const pct = Math.max(0, Math.min(100, (energy / 0.12) * 100));
-
-                const fillEl = document.getElementById(SIGNAL_BAR_IDS[freq]);
-                fillEl.style.width = pct + '%';
-
-                const isActive = (freq === dominantFreq) && (dominantEnergy >= MIN_ENERGY);
-                fillEl.classList.toggle('active', isActive);
-            }
+        function tryHdr() {
+            if (allBits.length < 8) return; let nl = 0; for (let i = 0; i < 8; i++)nl = (nl << 1) | allBits[i];
+            const hb = 8 + nl * 8 + 32; if (allBits.length < hb) return;
+            let dl = 0; const ds = 8 + nl * 8; for (let i = 0; i < 32; i++)dl = (dl << 1) | allBits[ds + i];
+            if (dl > C.MAX * 2 || dl < 0) return;
+            expBits = hb + dl * 8 + 16; hdr = { nl, dl };
         }
 
-        function setRecvProgress(pct) {
-            document.getElementById('recvProgress').style.width = pct + '%';
-            document.getElementById('recvProgressLabel').innerText = Math.round(pct) + '%';
+        function finish() {
+            listening = false; clearInterval(aTimer); cancelAnimationFrame(rAF);
+            const bytes = bits2b(allBits);
+            if (bytes.length < 6) {
+                setRS('err', 'Failed', 'Not enough data. Try again closer.'); hide('btnStop'); show('btnListen');
+                $('rlt').textContent = 'Failed'; $('rlh').textContent = 'Tap to retry'; return;
+            }
+            const r = parsePkt(bytes);
+            if (!r) {
+                setRS('err', 'Decode Error', 'Data corrupted by noise.'); hide('btnStop'); show('btnListen');
+                $('rlt').textContent = 'Error'; $('rlh').textContent = 'Tap to retry'; return;
+            }
+            const el = (Date.now() - rxT0) / 1000;
+            if (!r.ok) setRS('err', 'CRC Mismatch', 'File may be corrupted. Downloaded anyway.');
+            else {
+                setRS('ok', 'Complete', fmtSize(r.data.length) + ' received in ' + fmtTime(el));
+                $('rfill').style.width = '100%'; $('rpct').textContent = '100%'; $('rrem').textContent = 'Done';
+            }
+            dl(r.name, r.data); showRecv(r.name, r.data.length, r.ok);
+            hide('btnStop'); show('btnListen'); $('rlt').textContent = 'Complete'; $('rlh').textContent = 'File downloaded. Tap to receive another.';
+            if (rCtx) { rCtx.close(); rCtx = null; }
         }
 
-        function onBitsUpdated() {
-            const st = recvState;
-            if (!st) return;
-
-            // Try to resolve the header (first 64 bits = 8 ASCII chars = payload length)
-            if (!st.expectedTotalBits && st.bits.length >= 64) {
-                const headerStr = bitsToString(st.bits.slice(0, 64));
-                const payloadLen = parseInt(headerStr, 10);
-                if (!isNaN(payloadLen) && payloadLen > 0 && payloadLen < 200000) {
-                    st.expectedTotalBits = (8 + payloadLen + 5) * 8;
-                    if (!st.headerShown) {
-                        st.headerShown = true;
-                        packetLog('<span class="info">[HEADER]</span> Payload: ' + payloadLen + ' bytes (' + st.expectedTotalBits + ' bits)');
-                    }
-                }
-            }
-
-            // Progress bar
-            if (st.expectedTotalBits) {
-                const pct = Math.min(99, (st.bits.length / st.expectedTotalBits) * 100);
-                setRecvProgress(pct);
-            } else {
-                setRecvProgress(Math.min(8, (st.bits.length / 64) * 8));
-            }
-
-            // Live packet view
-            if (st.bits.length % 8 === 0 && st.bits.length >= 8) {
-                const newByteBits = st.bits.slice(-8);
-                const code = parseInt(newByteBits, 2);
-                const printable = (code >= 32 && code <= 126) ? String.fromCharCode(code) : '.';
-                appendLivePacketByte(code, printable);
-            }
-
-            // Status update
-            if (st.expectedTotalBits) {
-                setStatus('Receiving: ' + st.bits.length + ' / ' + st.expectedTotalBits + ' bits', '');
-            }
-
-            // All bits received — decode!
-            if (st.expectedTotalBits && st.bits.length >= st.expectedTotalBits) {
-                finishDecode(st.bits.slice(0, st.expectedTotalBits));
-            }
+        function dl(name, data) {
+            const b = new Blob([data]), u = URL.createObjectURL(b), a = document.createElement('a');
+            a.href = u; a.download = name || 'received'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u);
         }
 
-        function attemptDecode() {
-            const st = recvState;
-            if (!st) return;
-            if (st.bits.length >= 64) {
-                const headerStr = bitsToString(st.bits.slice(0, 64));
-                const payloadLen = parseInt(headerStr, 10);
-                if (!isNaN(payloadLen) && payloadLen > 0) {
-                    const needed = (8 + payloadLen + 5) * 8;
-                    if (st.bits.length >= needed) {
-                        finishDecode(st.bits.slice(0, needed));
-                        return;
-                    }
-                }
-            }
-            packetLog('<span class="err">[ERROR]</span> Incomplete: ' + st.bits.length + ' bits received.');
-            setStatus('Incomplete transfer. Try again closer.', 'error');
-            setPhase('error', 'Incomplete');
-            stopReceiver();
+        function showRecv(name, size, ok) {
+            show('recvCard'); $('rfn').textContent = name || 'Unknown';
+            $('rfm').textContent = fmtSize(size) + (ok ? ' - Verified' : ' - Integrity Warning');
         }
 
-        function stopReceiver() {
-            if (recvState && recvState.stream) {
-                recvState.stream.getTracks().forEach(t => t.stop());
-            }
-            if (recvState && recvState.processor) {
-                recvState.processor.disconnect();
-            }
-            recvState = null;
-            document.getElementById('recvBtn').disabled = false;
+        function stopListen() {
+            listening = false; clearInterval(aTimer); cancelAnimationFrame(rAF);
+            if (rCtx) { rCtx.close(); rCtx = null; }
+            if (mic) { mic.getTracks().forEach(t => t.stop()); mic = null; }
+            rxSt = 'IDLE'; syncN = 0; silN = 0;
+            hide('btnStop'); $('rlt').textContent = 'Stopped'; $('rlh').textContent = 'Go back to restart';
         }
-
-        let liveByteBuffer = [];
-        function appendLivePacketByte(code, printable) {
-            liveByteBuffer.push({ code, printable });
-            if (liveByteBuffer.length > 64) liveByteBuffer.shift();
-
-            const hexLine = liveByteBuffer.map(b => b.code.toString(16).padStart(2, '0')).join(' ');
-            const asciiLine = liveByteBuffer.map(b => b.printable).join('');
-
-            const el = document.getElementById('packetView');
-            const existing = el.innerHTML;
-            const marker = '<!--LIVE-->';
-            const idx = existing.indexOf(marker);
-            const base = idx >= 0 ? existing.slice(0, idx) : existing + '\n';
-            el.innerHTML = base + marker +
-                '<span class="dim">' + hexLine + '</span>\n' +
-                '<span class="info">' + escapeHtml(asciiLine) + '</span>';
-            el.scrollTop = el.scrollHeight;
-        }
-
-        function escapeHtml(s) {
-            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-
-        function bitsToString(bits) {
-            let str = '';
-            for (let i = 0; i < bits.length; i += 8) {
-                const byte = bits.slice(i, i + 8);
-                if (byte.length < 8) break;
-                str += String.fromCharCode(parseInt(byte, 2));
-            }
-            return str;
-        }
-
-        function finishDecode(allBits) {
-            setRecvProgress(100);
-            liveByteBuffer = [];
-            const fullStr = bitsToString(allBits);
-
-            try {
-                const lenStr = fullStr.slice(0, 8);
-                const payloadLen = parseInt(lenStr, 10);
-                const payloadStr = fullStr.slice(8, 8 + payloadLen);
-                const crcStr = fullStr.slice(8 + payloadLen, 8 + payloadLen + 5);
-
-                const expectedCrc = parseInt(crcStr, 10);
-                const actualCrc = crc16(payloadStr);
-
-                if (expectedCrc !== actualCrc) {
-                    setStatus('Checksum mismatch! Data corrupted by noise.', 'error');
-                    setPhase('error', 'Checksum mismatch');
-                    packetLog('<span class="err">[ERROR]</span> CRC mismatch \u2014 data corrupted. Try again closer.');
-                    stopReceiver();
-                    return;
-                }
-
-                const obj = JSON.parse(payloadStr);
-                const binStr = atob(obj.d);
-                const arr = new Uint8Array(binStr.length);
-                for (let i = 0; i < binStr.length; i++) {
-                    arr[i] = binStr.charCodeAt(i);
-                }
-
-                const blob = new Blob([arr], { type: obj.t });
-                const url = URL.createObjectURL(blob);
-
-                // Show filename + download button in the summary
-                const summary = document.getElementById('receivedSummary');
-                summary.innerHTML = '<strong>\u2705 ' + escapeHtml(obj.n) + '</strong> (' +
-                    (arr.length / 1024).toFixed(1) + ' KB, checksum OK)<br>' +
-                    '<a href="' + url + '" download="' + escapeHtml(obj.n) +
-                    '" style="display:inline-block;margin-top:8px;padding:8px 20px;background:#1e8e3e;color:white;border-radius:6px;text-decoration:none;font-size:13px;">\u2B07 Download</a>';
-                summary.classList.add('visible');
-
-                setStatus('File received: ' + obj.n, 'success');
-                setPhase('idle', 'Transfer complete');
-                packetLog('<span class="info">[DONE]</span> ' + escapeHtml(obj.n) + ' verified! Click Download to save.');
-
-            } catch (err) {
-                setStatus('Decode failed (noise or corruption).', 'error');
-                setPhase('error', 'Decode error');
-                packetLog('<span class="err">[ERROR]</span> Decode failed: ' + escapeHtml(err.message));
-            }
-
-            stopReceiver();
-        }
-
-        window.addEventListener('beforeunload', () => {
-            if (recvState && recvState.stream) {
-                recvState.stream.getTracks().forEach(t => t.stop());
-            }
-        });
+        function setRS(dot, lbl, msg) { $('rdot').className = 'dot ' + dot; $('rlbl').textContent = lbl; $('rmsg').textContent = msg; }
     </script>
-
 </body>
 
 </html>
