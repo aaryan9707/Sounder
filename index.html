@@ -320,7 +320,7 @@ const C = {
     SYNC: 0.8,       // sync tone duration (longer = easier to detect)
     GAP: 0.3,        // gap after sync
     INT: 6,          // analysis interval in ms (faster sampling)
-    THRESH: 90,      // amplitude threshold (lowered for sensitivity)
+    THRESH: 40,      // amplitude threshold (lowered for sensitivity)
     TOL: 800,        // frequency band tolerance in Hz
     SMIN: 20,        // min sync frames needed (~120ms)
     GMIN: 6,         // min silence frames for gap (~36ms)
@@ -725,7 +725,7 @@ function startListen() {
 
     var freqData = new Uint8Array(anNode.frequencyBinCount);
     var timeData = new Uint8Array(anNode.fftSize);
-    var binWidth = C.SR / C.FFT;
+    var binWidth = rCtx.sampleRate / C.FFT;
 
     dbg('AudioContext created. SR=' + rCtx.sampleRate + ' FFT=' + C.FFT + ' binWidth=' + binWidth.toFixed(1) + 'Hz');
     dbg('F_sync=' + C.FS + 'Hz F0=' + C.F0 + 'Hz F1=' + C.F1 + 'Hz');
