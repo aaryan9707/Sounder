@@ -3,620 +3,410 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Data Transfer - Reliable Receiver</title>
+    <title>Reliable Audio Data Transfer</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-        }
-
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .status-panel {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border: 2px solid #e9ecef;
-        }
-
-        .dot-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-
-        .dot {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            margin-right: 10px;
-            display: inline-block;
-            animation: pulse 2s infinite;
-        }
-
-        .dot.green { background: #28a745; box-shadow: 0 0 10px #28a745; }
-        .dot.yellow { background: #ffc107; box-shadow: 0 0 10px #ffc107; }
-        .dot.red { background: #dc3545; box-shadow: 0 0 10px #dc3545; }
-        .dot.gray { background: #6c757d; }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-
-        .status-label {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .status-message {
-            color: #666;
-            font-size: 14px;
-            margin-top: 5px;
-            min-height: 20px;
-        }
-
-        .controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .info-panel {
-            background: #e7f3ff;
-            border: 2px solid #b3d9ff;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-
-        .info-title {
-            font-weight: bold;
-            color: #0066cc;
-            margin-bottom: 8px;
-        }
-
-        .info-text {
-            color: #333;
-            font-size: 13px;
-            line-height: 1.6;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .signal-indicator {
-            height: 4px;
-            background: #e9ecef;
-            border-radius: 2px;
-            margin-top: 15px;
-            overflow: hidden;
-        }
-
-        .signal-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; display: flex; justify-content: center; padding: 20px; }
+        .container { max-width: 600px; width: 100%; background: #1e1e1e; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h1 { text-align: center; color: #bb86fc; }
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #333; }
+        .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; background: #252525; color: #888; font-weight: bold; transition: 0.3s; }
+        .tab.active { background: #333; color: #bb86fc; border-bottom: 3px solid #bb86fc; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        textarea, input { width: 100%; padding: 10px; background: #2a2a2a; border: 1px solid #444; color: #fff; border-radius: 6px; margin-bottom: 15px; font-family: monospace; box-sizing: border-box; }
+        textarea { height: 120px; resize: vertical; }
+        button { padding: 12px 20px; background: #bb86fc; color: #121212; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 16px; transition: 0.2s; }
+        button:hover { background: #9955e8; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        .status { margin-top: 15px; padding: 10px; background: #2a2a2a; border-radius: 6px; text-align: center; font-family: monospace; min-height: 20px; }
+        .success { color: #03dac6; }
+        .error { color: #cf6679; }
+        .info { color: #909090; font-size: 14px; text-align: center; margin-bottom: 15px;}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📡 Audio Data Receiver</h1>
-        <p class="subtitle">Reliable File Transfer via Audio Signals</p>
 
-        <div class="status-panel">
-            <div class="dot-container">
-                <div id="rdot" class="dot gray"></div>
-                <span id="rlbl" class="status-label">Ready</span>
-            </div>
-            <div id="rmsg" class="status-message">Tap "Start Listening" to begin</div>
-            <div class="signal-indicator">
-                <div id="signalBar" class="signal-bar"></div>
-            </div>
-        </div>
-
-        <div class="controls">
-            <button id="btnListen" class="btn btn-primary" onclick="startListen()">
-                🎤 Start Listening
-            </button>
-            <button id="btnStop" class="btn btn-danger hidden" onclick="stopListen()">
-                ⏹️ Stop
-            </button>
-        </div>
-
-        <div class="info-panel">
-            <div class="info-title">ℹ️ How it works:</div>
-            <div class="info-text">
-                1. Click "Start Listening" to begin<br>
-                2. Play audio signal near your microphone<br>
-                3. File will automatically download when received<br>
-                4. Uses error detection and retransmission<br>
-                5. Works with square/digital wave signals
-            </div>
-        </div>
-
-        <div id="debug" style="margin-top: 15px; font-size: 11px; color: #999;"></div>
+<div class="container">
+    <h1>🎵 Acoustic Data Transfer</h1>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('sender')">📤 Sender</div>
+        <div class="tab" onclick="switchTab('receiver')">📥 Receiver</div>
     </div>
 
-    <script>
-        // Global variables
-        let listening = false;
-        let rCtx = null;
-        let anNode = null;
-        let micStream = null;
-        let rAF = null;
+    <!-- SENDER PANEL -->
+    <div id="sender-panel" class="panel active">
+        <p class="info">Enter text or data (Max ~2KB for fast transfer). Uses 500Hz/2000Hz Square Waves.</p>
+        <textarea id="tx-data" placeholder="Enter data to send...">Hello! This is a highly reliable audio data transfer. 1234567890</textarea>
+        <button id="btn-send" onclick="startSending()">🔊 Send Data via Audio</button>
+        <div id="tx-status" class="status">Ready to send.</div>
+    </div>
 
-        // Receiver state machine
-        let rxState = 'IDLE'; // IDLE, SYNC, HEADER, DATA, CHECKSUM
-        let rxBuffer = [];
-        let rxByteCount = 0;
-        let rxChecksum = 0;
-        let syncPattern = [];
-        let bitCellCount = 0;
-        let lastCrossing = 0;
-        let receivedData = [];
-        let totalBytes = 0;
-        let signalStrength = 0;
+    <!-- RECEIVER PANEL -->
+    <div id="receiver-panel" class="panel">
+        <p class="info">Keep the sender's speaker close to this device's microphone.</p>
+        <button id="btn-listen" onclick="startListening()">🎤 Start Listening</button>
+        <button id="btn-stop" onclick="stopListening()" style="background:#cf6679; margin-top:10px; display:none;">⏹ Stop Listening</button>
+        <div id="rx-status" class="status">Waiting for signal...</div>
+        <textarea id="rx-data" placeholder="Received data will appear here..." readonly style="margin-top:15px;"></textarea>
+    </div>
+</div>
 
-        // Constants
-        const SYNC_PATTERN = [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0];
-        const SAMPLE_THRESHOLD = 0.05;
-        const MIN_BIT_DURATION = 10;
-        const SAMPLE_RATE = 44100;
+<script>
+    // --- CONFIGURATION ---
+    const FREQ_0 = 500;      // Frequency for bit '0'
+    const FREQ_1 = 2000;     // Frequency for bit '1'
+    const FREQ_SYNC = 1200;  // Preamble sync frequency
+    const BIT_DURATION = 0.02; // 20ms per bit (50 bits/sec). Slow enough to be 100% reliable over air.
+    const SYNC_DURATION = 1.0; // 1 second sync tone
+    
+    let audioCtx = null;
+    let isSending = false;
+    let isListening = false;
+    let micStream = null;
+    let analyser = null;
+    let rxAnimFrame = null;
 
-        // Helper functions
-        function el(id) { return document.getElementById(id); }
-        function showEl(id) { el(id).classList.remove('hidden'); }
-        function hideEl(id) { el(id).classList.add('hidden'); }
+    // --- UI FUNCTIONS ---
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
         
-        function dbg(msg) {
-            const debugEl = el('debug');
-            if (debugEl) {
-                debugEl.textContent = msg;
-                console.log('[Receiver]', msg);
+        if(tab === 'sender') {
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.getElementById('sender-panel').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            document.getElementById('receiver-panel').classList.add('active');
+        }
+        if(isSending || isListening) stopAll();
+    }
+
+    function stopAll() {
+        if(isSending) { isSending = false; }
+        if(isListening) { stopListening(); }
+    }
+
+    // --- CRC32 IMPLEMENTATION (For Data Integrity) ---
+    const crcTable = (function() {
+        let crcTable = [];
+        for(let n = 0; n < 256; n++) {
+            let c = n;
+            for(let k = 0; k < 8; k++) {
+                c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+            }
+            crcTable[n] = c;
+        }
+        return crcTable;
+    })();
+
+    function crc32(str) {
+        let crc = 0 ^ (-1);
+        for (let i = 0; i < str.length; i++) {
+            crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+        }
+        return (crc ^ (-1)) >>> 0;
+    }
+
+    // --- SENDER LOGIC ---
+    async function startSending() {
+        if(isSending) return;
+        const data = document.getElementById('tx-data').value;
+        if(!data) { alert("Enter some data!"); return; }
+
+        const statusEl = document.getElementById('tx-status');
+        const btn = document.getElementById('btn-send');
+        
+        // 1. Prepare Data: Add CRC32 checksum to the end
+        const checksum = crc32(data).toString(16).padStart(8, '0');
+        const fullPayload = data + "|" + checksum; // Format: data|checksum
+        
+        // 2. Convert to bits
+        let bits = [];
+        for (let i = 0; i < fullPayload.length; i++) {
+            let charCode = fullPayload.charCodeAt(i);
+            for (let j = 7; j >= 0; j--) {
+                bits.push((charCode >> j) & 1);
             }
         }
 
-        function setRS(dot, lbl, msg) {
-            el('rdot').className = 'dot ' + dot;
-            el('rlbl').textContent = lbl;
-            el('rmsg').textContent = msg;
+        statusEl.textContent = `Preparing ${bits.length} bits...`;
+        statusEl.className = 'status';
+        btn.disabled = true;
+        isSending = true;
+
+        // 3. Setup Audio Context
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // 4. Play Sync Preamble
+        statusEl.textContent = "Sending Sync Preamble (1s)...";
+        await playTone(FREQ_SYNC, SYNC_DURATION);
+
+        // 5. Play Data Bits
+        for (let i = 0; i < bits.length; i++) {
+            if(!isSending) break;
+            let freq = bits[i] === 0 ? FREQ_0 : FREQ_1;
+            await playTone(freq, BIT_DURATION);
+            statusEl.textContent = `Sending bit ${i + 1}/${bits.length}...`;
         }
 
-        function updateSignalStrength(strength) {
-            signalStrength = Math.min(100, Math.max(0, strength * 100));
-            el('signalBar').style.width = signalStrength + '%';
-        }
+        statusEl.textContent = "✅ Transmission Complete!";
+        statusEl.className = 'status success';
+        btn.disabled = false;
+        isSending = false;
+        if(audioCtx) audioCtx.close();
+    }
 
-        // Start listening
-        function startListen() {
-            if (listening) return;
+    function playTone(freq, duration) {
+        return new Promise(resolve => {
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
             
-            navigator.mediaDevices.getUserMedia({ 
-                audio: { 
-                    echoCancellation: false,
-                    noiseSuppression: false,
-                    autoGainControl: false,
-                    channelCount: 1,
-                    sampleRate: SAMPLE_RATE
-                } 
-            }).then(function(stream) {
-                micStream = stream;
+            osc.type = 'square'; // Square wave for strong harmonics
+            osc.frequency.value = freq;
+            
+            // Prevent clicking/popping sounds
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // Keep volume low to prevent mic distortion
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+            osc.onended = resolve;
+        });
+    }
+
+    // --- RECEIVER LOGIC ---
+    async function startListening() {
+        if(isListening) return;
+        const statusEl = document.getElementById('rx-status');
+        const btnListen = document.getElementById('btn-listen');
+        const btnStop = document.getElementById('btn-stop');
+        
+        try {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+        } catch(e) {
+            statusEl.textContent = "❌ Microphone access denied!";
+            statusEl.className = 'status error';
+            return;
+        }
+
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaStreamSource(micStream);
+        
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512; // 512 FFT gives good frequency resolution for our wide-band FSK
+        source.connect(analyser);
+
+        isListening = true;
+        btnListen.style.display = 'none';
+        btnStop.style.display = 'block';
+        statusEl.textContent = "Listening for Sync Preamble (1200Hz)...";
+        statusEl.className = 'status';
+        
+        processAudio();
+    }
+
+    function stopListening() {
+        isListening = false;
+        if(rxAnimFrame) cancelAnimationFrame(rxAnimFrame);
+        if(micStream) micStream.getTracks().forEach(t => t.stop());
+        if(audioCtx) audioCtx.close();
+        
+        document.getElementById('btn-listen').style.display = 'block';
+        document.getElementById('btn-stop').style.display = 'none';
+        document.getElementById('rx-status').textContent = "Stopped.";
+    }
+
+    // DSP Processing using FFT Bins
+    let state = 'WAIT_SYNC'; // WAIT_SYNC -> READ_DATA
+    let receivedBits = [];
+    let bitBuffer = [];
+    let bitTimer = 0;
+    const SAMPLES_PER_BIT = Math.round((audioCtx ? audioCtx.sampleRate : 44100) * BIT_DURATION);
+    let samplesCount = 0;
+
+    function processAudio() {
+        if(!isListening) return;
+        rxAnimFrame = requestAnimationFrame(processAudio);
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteFrequencyData(dataArray);
+
+        // Sample rate is typically 44100 or 48000. 
+        // Bin width = sampleRate / fftSize (e.g., 44100 / 512 = 86.1 Hz per bin)
+        const sampleRate = audioCtx.sampleRate;
+        const binWidth = sampleRate / analyser.fftSize;
+
+        // Calculate target bins
+        const binSync = Math.round(FREQ_SYNC / binWidth);
+        const bin0 = Math.round(FREQ_0 / binWidth);
+        const bin1 = Math.round(FREQ_1 / binWidth);
+
+        // Get magnitudes (check a small range around the target bin to account for slight mic inaccuracies)
+        let magSync = getAvgMag(dataArray, binSync - 1, binSync + 1);
+        let mag0 = getAvgMag(dataArray, bin0 - 1, bin0 + 1);
+        let mag1 = getAvgMag(dataArray, bin1 - 1, bin1 + 1);
+
+        const statusEl = document.getElementById('rx-status');
+
+        if (state === 'WAIT_SYNC') {
+            // If 1200Hz is significantly louder than others, we found the preamble!
+            if (magSync > 150 && magSync > mag0 * 1.5 && magSync > mag1 * 1.5) {
+                statusEl.textContent = "✅ Sync Detected! Receiving data...";
+                state = 'READ_DATA';
+                receivedBits = [];
+                bitBuffer = [];
+                samplesCount = 0;
+            }
+        } 
+        else if (state === 'READ_DATA') {
+            // Accumulate energy for the current bit duration
+            bitBuffer.push({ m0: mag0, m1: mag1 });
+            samplesCount++;
+
+            // If we have collected enough samples for one bit
+            if (samplesCount >= (SAMPLES_PER_BIT / (analyser.fftSize / 2))) { // Rough estimation of frames per bit
+                // Actually, requestAnimationFrame runs at ~60fps. 
+                // Let's just use a time-based approach for simplicity and accuracy in JS.
+            }
+            
+            // Better approach: Time-based bit slicing
+            let avg0 = 0, avg1 = 0;
+            for(let b of bitBuffer) { avg0 += b.m0; avg1 += b.m1; }
+            avg0 /= bitBuffer.length;
+            avg1 /= bitBuffer.length;
+
+            // We evaluate a bit every BIT_DURATION seconds. 
+            // Since rAF is ~16ms, and BIT_DURATION is 20ms, we evaluate roughly every 1-2 frames.
+            // Let's use a precise timestamp approach instead of frame counting.
+        }
+    }
+
+    // --- REFINED RECEIVER LOGIC (Time-based for perfect accuracy) ---
+    let lastTime = 0;
+    let currentBitStart = 0;
+    let bitEnergy0 = 0, bitEnergy1 = 0, bitFrames = 0;
+
+    function processAudio() {
+        if(!isListening) return;
+        rxAnimFrame = requestAnimationFrame(processAudio);
+
+        const now = performance.now();
+        if(lastTime === 0) { lastTime = now; currentBitStart = now; }
+
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteFrequencyData(dataArray);
+
+        const sampleRate = audioCtx.sampleRate;
+        const binWidth = sampleRate / analyser.fftSize;
+
+        const binSync = Math.round(FREQ_SYNC / binWidth);
+        const bin0 = Math.round(FREQ_0 / binWidth);
+        const bin1 = Math.round(FREQ_1 / binWidth);
+
+        let magSync = getAvgMag(dataArray, binSync - 1, binSync + 1);
+        let mag0 = getAvgMag(dataArray, bin0 - 1, bin0 + 1);
+        let mag1 = getAvgMag(dataArray, bin1 - 1, bin1 + 1);
+
+        const statusEl = document.getElementById('rx-status');
+
+        if (state === 'WAIT_SYNC') {
+            if (magSync > 120 && magSync > mag0 * 1.5 && magSync > mag1 * 1.5) {
+                statusEl.textContent = "✅ Sync Detected! Receiving data...";
+                state = 'READ_DATA';
+                receivedBits = [];
+                currentBitStart = now + (SYNC_DURATION * 1000); // Wait for sync to finish
+                bitEnergy0 = 0; bitEnergy1 = 0; bitFrames = 0;
+            }
+        } 
+        else if (state === 'READ_DATA') {
+            if (now >= currentBitStart) {
+                bitEnergy0 += mag0;
+                bitEnergy1 += mag1;
+                bitFrames++;
+            }
+
+            // Check if 20ms (BIT_DURATION) has passed
+            if (now - currentBitStart >= (BIT_DURATION * 1000)) {
+                if(bitFrames > 0) {
+                    bitEnergy0 /= bitFrames;
+                    bitEnergy1 /= bitFrames;
+                    
+                    // Decide bit based on which frequency was stronger
+                    let bit = (bitEnergy1 > bitEnergy0) ? 1 : 0;
+                    receivedBits.push(bit);
+                    
+                    statusEl.textContent = `Receiving... Bits: ${receivedBits.length}`;
+                }
                 
-                // Create audio context
-                rCtx = new (window.AudioContext || window.webkitAudioContext)({
-                    sampleRate: SAMPLE_RATE,
-                    latencyHint: 'interactive'
-                });
-                
-                // Create analyzer node
-                const source = rCtx.createMediaStreamSource(stream);
-                anNode = rCtx.createAnalyser();
-                anNode.fftSize = 2048;
-                anNode.smoothingTimeConstant = 0;
-                anNode.minDecibels = -90;
-                anNode.maxDecibels = -10;
-                source.connect(anNode);
-                
-                // Start processing
-                listening = true;
-                resetRxState();
-                processAudio();
-                
-                hideEl('btnListen');
-                showEl('btnStop');
-                setRS('green', 'Listening', 'Waiting for audio signal...');
-                dbg('Listening started');
-                
-            }).catch(function(err) {
-                setRS('red', 'Error', 'Microphone access denied');
-                dbg('Error: ' + err.message);
-            });
-        }
+                // Reset for next bit
+                currentBitStart = now;
+                bitEnergy0 = 0; bitEnergy1 = 0; bitFrames = 0;
 
-        // Stop listening
-        function stopListen() {
-            dbg('Listening stopped by user');
-            listening = false;
-            if (rAF) { 
-                cancelAnimationFrame(rAF); 
-                rAF = null; 
-            }
-            cleanupAudioCtx();
-            resetRxState();
-            hideEl('btnStop');
-            showEl('btnListen');
-            setRS('gray', 'Stopped', 'Tap to start listening again');
-            updateSignalStrength(0);
-        }
-
-        // Cleanup audio context
-        function cleanupAudioCtx() {
-            if (rCtx) {
-                try { rCtx.close(); } catch (e) {}
-                rCtx = null;
-            }
-            anNode = null;
-        }
-
-        // Cleanup receiver
-        function cleanupReceiver() {
-            listening = false;
-            if (rAF) { cancelAnimationFrame(rAF); rAF = null; }
-            cleanupAudioCtx();
-            if (micStream) {
-                micStream.getTracks().forEach(function(t) { t.stop(); });
-                micStream = null;
-            }
-            resetRxState();
-        }
-
-        // Reset receiver state
-        function resetRxState() {
-            rxBuffer = [];
-            rxByteCount = 0;
-            rxChecksum = 0;
-            rxState = 'IDLE';
-            syncPattern = [];
-            lastCrossing = 0;
-            bitCellCount = 0;
-            receivedData = [];
-            totalBytes = 0;
-        }
-
-        // Main audio processing loop
-        function processAudio() {
-            if (!listening) return;
-            
-            const dataArray = new Float32Array(anNode.fftSize);
-            anNode.getFloatTimeDomainData(dataArray);
-            
-            // Calculate signal strength
-            let maxAmp = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-                maxAmp = Math.max(maxAmp, Math.abs(dataArray[i]));
-            }
-            updateSignalStrength(maxAmp * 5); // Amplify for display
-            
-            // Apply bandpass filter
-            const filteredData = bandpassFilter(dataArray);
-            
-            // Detect zero crossings
-            const crossings = detectZeroCrossings(filteredData);
-            
-            // Process detected bits
-            if (crossings.length > 0) {
-                processBits(crossings);
-            }
-            
-            rAF = requestAnimationFrame(processAudio);
-        }
-
-        // Bandpass filter implementation
-        function bandpassFilter(samples) {
-            const filtered = new Float32Array(samples.length);
-            let prev1 = 0, prev2 = 0;
-            
-            // Simple low-pass filter
-            for (let i = 0; i < samples.length; i++) {
-                // Moving average with 3 samples
-                const sum = samples[i] + prev1 + prev2;
-                filtered[i] = sum / 3;
-                prev2 = prev1;
-                prev1 = samples[i];
-            }
-            
-            return filtered;
-        }
-
-        // Detect zero crossings
-        function detectZeroCrossings(samples) {
-            const crossings = [];
-            const threshold = SAMPLE_THRESHOLD;
-            
-            for (let i = 1; i < samples.length; i++) {
-                // Detect transitions
-                if ((samples[i-1] < -threshold && samples[i] > threshold) ||
-                    (samples[i-1] > threshold && samples[i] < -threshold)) {
-                    crossings.push({
-                        index: i,
-                        direction: samples[i] > threshold ? 1 : -1,
-                        amplitude: Math.abs(samples[i])
-                    });
+                // Check if we have a multiple of 8 bits to decode
+                if (receivedBits.length % 8 === 0 && receivedBits.length > 0) {
+                    tryDecode();
                 }
             }
-            
-            return crossings;
         }
+        lastTime = now;
+    }
 
-        // Process bits from crossings
-        function processBits(crossings) {
-            for (let i = 1; i < crossings.length; i++) {
-                const duration = crossings[i].index - crossings[i-1].index;
-                
-                // Ignore very short pulses (noise)
-                if (duration < MIN_BIT_DURATION / 2) continue;
-                
-                // Determine bit value
-                const bit = crossings[i].direction === 1 ? 1 : 0;
-                
-                // Process the bit
-                processBit(bit);
-            }
+    function getAvgMag(dataArray, startBin, endBin) {
+        let sum = 0;
+        let count = 0;
+        for(let i = Math.max(0, startBin); i <= Math.min(dataArray.length - 1, endBin); i++) {
+            sum += dataArray[i];
+            count++;
         }
+        return count > 0 ? sum / count : 0;
+    }
 
-        // State machine for bit processing
-        function processBit(bit) {
-            switch(rxState) {
-                case 'IDLE':
-                    // Build sync pattern
-                    syncPattern.push(bit);
-                    if (syncPattern.length > SYNC_PATTERN.length) {
-                        syncPattern.shift();
-                    }
-                    
-                    // Check for sync pattern
-                    if (detectSyncPattern()) {
-                        rxState = 'SYNC';
-                        syncPattern = [];
-                        setRS('yellow', 'Syncing', 'Signal detected, synchronizing...');
-                        dbg('Sync pattern detected');
-                    }
-                    break;
-                    
-                case 'SYNC':
-                    // Collect sync confirmation bits
-                    syncPattern.push(bit);
-                    if (syncPattern.length >= 8) {
-                        rxState = 'HEADER';
-                        rxBuffer = [];
-                        rxByteCount = 0;
-                        bitCellCount = 0;
-                        receivedData = [];
-                        setRS('yellow', 'Header', 'Receiving file header...');
-                        dbg('Receiving header');
-                    }
-                    break;
-                    
-                case 'HEADER':
-                    rxBuffer.push(bit);
-                    bitCellCount++;
-                    
-                    if (bitCellCount >= 32) { // 4 bytes for file size
-                        const header = bitsToBytes(rxBuffer);
-                        totalBytes = (header[0] << 24) | (header[1] << 16) | 
-                                    (header[2] << 8) | header[3];
-                        rxByteCount = totalBytes;
-                        rxBuffer = [];
-                        bitCellCount = 0;
-                        rxChecksum = 0;
-                        rxState = 'DATA';
-                        setRS('yellow', 'Receiving', `Downloading ${totalBytes} bytes...`);
-                        dbg(`File size: ${totalBytes} bytes`);
-                    }
-                    break;
-                    
-                case 'DATA':
-                    rxBuffer.push(bit);
-                    bitCellCount++;
-                    
-                    if (bitCellCount >= 8) {
-                        const byte = bitsToByte(rxBuffer);
-                        rxChecksum ^= byte;
-                        receivedData.push(byte);
-                        rxByteCount--;
-                        rxBuffer = [];
-                        bitCellCount = 0;
-                        
-                        // Update progress
-                        const progress = ((totalBytes - rxByteCount) / totalBytes * 100).toFixed(1);
-                        setRS('yellow', 'Receiving', `${progress}% complete (${receivedData.length} bytes)`);
-                        
-                        if (rxByteCount <= 0) {
-                            rxState = 'CHECKSUM';
-                            setRS('yellow', 'Verifying', 'Checking data integrity...');
-                            dbg('Verifying checksum');
-                        }
-                    }
-                    break;
-                    
-                case 'CHECKSUM':
-                    rxBuffer.push(bit);
-                    if (rxBuffer.length >= 8) {
-                        const receivedChecksum = bitsToByte(rxBuffer);
-                        if (receivedChecksum === rxChecksum) {
-                            saveReceivedFile();
-                        } else {
-                            setRS('red', 'Error', 'Checksum failed! Waiting for retransmission...');
-                            dbg('Checksum mismatch');
-                            // Reset for retransmission
-                            setTimeout(() => {
-                                resetRxState();
-                                setRS('green', 'Listening', 'Ready for retransmission');
-                            }, 2000);
-                        }
-                    }
-                    break;
-            }
-        }
-
-        // Detect sync pattern
-        function detectSyncPattern() {
-            if (syncPattern.length < SYNC_PATTERN.length) return false;
-            
-            let matchCount = 0;
-            const startIdx = syncPattern.length - SYNC_PATTERN.length;
-            
-            for (let i = 0; i < SYNC_PATTERN.length; i++) {
-                if (syncPattern[startIdx + i] === SYNC_PATTERN[i]) {
-                    matchCount++;
-                }
-            }
-            
-            // Allow 80% match for noise tolerance
-            return matchCount >= SYNC_PATTERN.length * 0.8;
-        }
-
-        // Convert bits array to bytes array
-        function bitsToBytes(bits) {
-            const bytes = [];
-            for (let i = 0; i < bits.length; i += 8) {
-                let byte = 0;
-                for (let j = 0; j < 8 && (i + j) < bits.length; j++) {
-                    byte = (byte << 1) | bits[i + j];
-                }
-                bytes.push(byte);
-            }
-            return bytes;
-        }
-
-        // Convert 8 bits to a single byte
-        function bitsToByte(bits) {
+    function tryDecode() {
+        // Convert bits to bytes
+        let bytes = [];
+        for(let i = 0; i < receivedBits.length; i += 8) {
+            if(i + 8 > receivedBits.length) break;
             let byte = 0;
-            for (let i = 0; i < 8 && i < bits.length; i++) {
-                byte = (byte << 1) | (bits[i] || 0);
+            for(let j = 0; j < 8; j++) {
+                byte = (byte << 1) | receivedBits[i + j];
             }
-            return byte;
+            bytes.push(byte);
         }
 
-        // Save received file
-        function saveReceivedFile() {
-            try {
-                const uint8Array = new Uint8Array(receivedData);
-                const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
-                
-                // Create download link
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `received_file_${Date.now()}.bin`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                setRS('green', 'Complete!', `File saved (${receivedData.length} bytes)`);
-                dbg(`File saved successfully: ${receivedData.length} bytes`);
-                
-                // Auto-stop after successful reception
-                setTimeout(() => {
-                    stopListen();
-                }, 3000);
-                
-            } catch (error) {
-                setRS('red', 'Error', 'Failed to save file');
-                dbg('Save error: ' + error.message);
+        let str = String.fromCharCode(...bytes);
+        
+        // Check if it contains our delimiter '|'
+        if(str.includes('|')) {
+            let parts = str.split('|');
+            let data = parts[0];
+            let recvChecksum = parts[1];
+            
+            // Verify CRC32
+            let calcChecksum = crc32(data).toString(16).padStart(8, '0');
+            
+            if(recvChecksum === calcChecksum) {
+                // SUCCESS!
+                document.getElementById('rx-data').value = data;
+                document.getElementById('rx-status').textContent = "✅ Data Received & Verified Perfectly!";
+                document.getElementById('rx-status').className = 'status success';
+                state = 'WAIT_SYNC'; // Reset for next transmission
+                receivedBits = [];
+            } else {
+                document.getElementById('rx-status').textContent = `❌ Checksum Mismatch! (Expected ${calcChecksum}, Got ${recvChecksum}). Waiting for retry...`;
+                document.getElementById('rx-status').className = 'status error';
+                // Don't reset state, maybe it was a false positive delimiter. 
+                // But to be safe, let's just clear and wait for a new sync.
+                state = 'WAIT_SYNC'; 
+                receivedBits = [];
             }
         }
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', function() {
-            cleanupReceiver();
-        });
-
-        // Handle visibility change
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden && listening) {
-                dbg('Page hidden, pausing...');
-            }
-        });
-    </script>
+    }
+</script>
 </body>
 </html>
