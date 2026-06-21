@@ -894,6 +894,13 @@ function startListen() {
                         el('rpct').textContent = Math.round(p) + '%';
                         el('rrem').textContent = fmtTime(Math.max(0, rem)) + ' left';
                         setRS('on', 'Receiving', Math.floor(allBits.length / 8) + ' / ' + Math.ceil(expBits / 8) + ' bytes');
+
+                        // AUTO-FINISH: If we have received all expected bits, automatically finish
+                        if (allBits.length >= expBits) {
+                            dbg('>> AUTO-FINISH: Received all expected bits (' + expBits + ')');
+                            finishReceive();
+                            return;
+                        }
                     } else {
                         setRS('on', 'Receiving', Math.floor(allBits.length / 8) + ' bytes received');
                     }
